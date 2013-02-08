@@ -48,6 +48,10 @@ for i_dof=1:n_dofs
 end
 
 plot_me = 1;
+save_update_summaries = 0;
+if (save_update_summaries)
+  addpath(genpath('fileio/'))
+end
 
 %-------------------------------------------------------------------------------
 % Actual optimization loop
@@ -57,8 +61,11 @@ while (i_update<=n_updates)
   %------------------------------------------------------------------
   % Update parameters and sample next batch of thetas
   if (i_update>0)
-    [ distributions summary ] = update_distributions(distributions,theta_eps,costs,update_parameters);
-    learning_history(i_update) = summary;
+    [ distributions update_summary ] = update_distributions(distributions,theta_eps,costs,update_parameters);
+    learning_history(i_update) = update_summary;
+    if (save_update_summaries)
+      write_update_summary(task.name,i_update,update_summary)
+    end
   end
   
   %------------------------------------------------------------------
@@ -71,7 +78,9 @@ while (i_update<=n_updates)
   if (plot_me)
     figure(1)
     if (i_update==0), clf; end
-    subplot(n_dofs,4,1:4:n_dofs*4)
+    % Very difficult to see anything in the plots for many dofs
+    plot_n_dofs = min(n_dofs,3);
+    subplot(plot_n_dofs,4,1:4:plot_n_dofs*4)
     cla
     title('Visualization of roll-outs')
     hold on
@@ -91,10 +100,10 @@ while (i_update<=n_updates)
 
     if (i_update>0)
       plotlearninghistory(learning_history);
-      %if (isfield(task,'plotlearninghistorycustom')) zzz
-      %  figure(11)
-      %  task.plotlearninghistorycustom(learning_history)
-      %end
+      if (isfield(task,'plotlearninghistorycustom'))
+        figure(11)
+        task.plotlearninghistorycustom(learning_history)
+      end
     end
     %pause; fprintf('Pausing... press key to continue.\n')
     pause(0.1)
@@ -102,6 +111,9 @@ while (i_update<=n_updates)
 
   i_update = i_update + 1;
 end
+
+save(sprintf('%s_learning_history.mat',task.name),'learning_history');
+
 
 % Done with optimizing. Return optimal (?) parameters
 % These are the means of the distributions for each dof
