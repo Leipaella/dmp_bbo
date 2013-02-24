@@ -143,6 +143,20 @@ classdef Skill
 
     end
     
+    function visualize_previous_experience(obj)
+      figure(2)
+      hold on;
+      for ii = 1:length(obj.previous_experience)
+        if(obj.previous_experience(ii).percept)
+          plot(obj.previous_experience(ii).cost,obj.previous_experience(ii).i,'rx');
+        else
+          plot(obj.previous_experience(ii).cost,obj.previous_experience(ii).i,'bx');
+        end
+      end
+      xlabel('cost');
+      ylabel('update number');
+    end
+    
     
   end
   
