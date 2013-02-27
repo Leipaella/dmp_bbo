@@ -80,6 +80,8 @@ classdef Skill
           
           %empty the rollout buffer
           obj.rollout_buffer = [];
+          
+          
         end
         
         %add to previous history!
@@ -94,6 +96,65 @@ classdef Skill
           obj.previous_experience(end+1) = previous;
         end
      
+        
+        %if more than, say, 50 samples taken, time to examine if it's worth
+        %splitting the skill.
+        
+        if mod(length(obj.previous_experience),50) == 0
+          obj.visualize_previous_experience();
+          for ii = 1:length(obj.previous_experience)
+            c(ii) = obj.previous_experience(ii).cost(1);
+          end
+          color = ['r' 'b' 'k' 'g'];
+          for n = 1:2
+            gaussians{n} = gmdistribution.fit(c',n);
+            AIC(n) = gaussians{n}.AIC;
+          end
+          [~, nComp] = min(AIC);
+          gaus = gmdistribution.fit(c', nComp);
+          figure(2);
+          hold on;
+          x = min(c(:)) : 0.01 : max(c(:));
+          y = pdf(gaussians{nComp},x');
+          y = y./max(y(:))*obj.i_update;
+          plot(x,y, color(nComp));
+          
+          idx = cluster(gaussians{nComp},c');
+          for ii = 1:nComp
+            clusters(ii).x = c(idx ==ii);
+            y = 1:obj.i_update;
+            clusters(ii).y = y(idx ==ii);
+            plot(clusters(ii).x, clusters(ii).y,strcat(color(ii),'o'));
+          end
+          
+          if(nComp > 1)
+            %means that we need to see if it's time to split!
+            %is the percept a good indicator of which cluster label there
+            %will be on the cost?
+            
+            for ii = 1:length(obj.previous_experience)
+              features(ii,:) = obj.previous_experience(ii).percept;
+              labels(ii) = idx(ii);
+            end
+            
+            
+            weights = (1:obj.i_update)/obj.i_update;
+            tree = classregtree(features,labels,'method','classification','weights',weights);
+            %tree = ClassificationTree.fit(features,labels,'crossval','on');
+            [cost, ~, ~, best] = test(tree,'crossvalidate',features,labels,'weights',weights);
+            tmin = prune(tree,'level',best);
+            [cost, ~, ~, best] = test(tree,'crossvalidate',features,labels,'weights',weights);
+            if(1)
+              disp(cost(best));
+              view(tmin);
+              pause;
+            end
+              
+          end
+          
+        end
+        
+        
         % Plotting
      
          figure(1)
@@ -145,12 +206,13 @@ classdef Skill
     
     function visualize_previous_experience(obj)
       figure(2)
+      clf;
       hold on;
       for ii = 1:length(obj.previous_experience)
-        if(obj.previous_experience(ii).percept)
-          plot(obj.previous_experience(ii).cost,obj.previous_experience(ii).i,'rx');
+        if(obj.previous_experience(ii).percept(1))
+          plot(obj.previous_experience(ii).cost(1),obj.previous_experience(ii).i,'rx');
         else
-          plot(obj.previous_experience(ii).cost,obj.previous_experience(ii).i,'bx');
+          plot(obj.previous_experience(ii).cost(1),obj.previous_experience(ii).i,'bx');
         end
       end
       xlabel('cost');
@@ -184,13 +246,13 @@ function obj = Skill_test_function
    obj.rollout_buffer = [];
    obj.i_update = 0;
    
-   while obj.i_update < 100
+   while obj.i_update < 400
      if(rand(1)>0.5)
        task = task_viapoint([0.4 0.7],0.3);
-       percept = 1;
+       percept = [1 rand([1 4])];
      else
        task = task_viapoint([0.7 0.4],0.3);
-       percept = 0;
+       percept = [0 rand([1 4])];
      end
      task_solver = task_viapoint_solver_dmp(g,y0,0);
      obj = obj.solve_task_instance(task,task_solver,percept);
