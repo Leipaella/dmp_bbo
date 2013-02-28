@@ -4,7 +4,7 @@ classdef Skill
     idx;
     distributions;
     rollout_buffer; %rollout.dmp_parameters_sample, rollout.sensation, rollout.cost
-    i_update;
+    i_update=0;
     previous_experience; %contains precept, sample, cost, and i_update
     tree;
     learning_history; %same structure as used in other locations
@@ -26,7 +26,7 @@ classdef Skill
       
       if ~isempty(obj.tree) && ~isempty(obj.subskills)
         %do have subskills
-        [label, score] = predict(obj.tree,percept);
+        label = obj.tree.eval(percept);
         holds = false;
       end
     end
@@ -110,10 +110,18 @@ classdef Skill
         %splitting the skill.
         
         if mod(length(obj.previous_experience),50) == 0
-          obj.visualize_previous_experience();
-          [splitDecision tree] = cluster_costs(obj);
+          fig = obj.idx*obj.n_figs + 2;
+          obj.visualize_previous_experience(fig);
+          [splitDecision tree n_splits] = cluster_costs(obj,fig);
           if splitDecision == true
             obj.tree = tree;
+            obj.subskills = Skill(strcat(obj.name, '_sub', num2str(1)),obj.distributions);
+            obj.subskills.idx = obj.idx + 1;
+            obj.subskills.n_figs = 2;
+            for jj = 2:n_splits
+              obj.subskills(jj) = obj.subskills(jj-1);
+              obj.subskills(jj).idx = obj.subskills(jj-1).idx + 1;
+            end
           end
         end
         
@@ -145,8 +153,8 @@ classdef Skill
           end
         end
       else %end if ( precondition_holds )
-        [label, costs] = predict(obj.tree,percept);
-        obj.subskills(label) = solve_task_instance(obj.subskills(label),task_intance,task_solver, percept);
+        label = obj.tree.eval(percept);
+        obj.subskills(str2double(label{1})) = solve_task_instance(obj.subskills(str2double(label{1})),task_instance,task_solver, percept);
       end
     end %end solve_task_instance
     
@@ -169,8 +177,8 @@ classdef Skill
 
     end
     
-    function visualize_previous_experience(obj)
-      figure(obj.idx*obj.n_figs + 2)
+    function visualize_previous_experience(obj, fig)
+      figure(fig)
       clf;
       hold on;
       for ii = 1:length(obj.previous_experience)
@@ -212,8 +220,8 @@ function obj = Skill_test_function
    obj.i_update = 0;
    obj.n_figs = 2;
    obj.idx = 0;
-   
-   while obj.i_update < 400
+   count = 0;
+   while count < 800
      if(rand(1)>0.5)
        task = task_viapoint([0.4 0.7],0.3);
        percept = [1 rand([1 4])];
@@ -223,7 +231,7 @@ function obj = Skill_test_function
      end
      task_solver = task_viapoint_solver_dmp(g,y0,0);
      obj = obj.solve_task_instance(task,task_solver,percept);
-     
+     count = count+1;
    end
 
 end

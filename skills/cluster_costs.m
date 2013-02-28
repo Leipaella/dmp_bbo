@@ -1,7 +1,9 @@
-function [splitDecision tree] = cluster_costs(skill)
+function [splitDecision tree n_splits] = cluster_costs(skill, fig)
 
+figure(fig);
 splitDecision = false;
 tree = [];
+n_splits = 0;
 
 obj = skill;
 for ii = 1:length(obj.previous_experience)
@@ -14,7 +16,6 @@ for n = 1:2
 end
 [~, nComp] = min(AIC);
 gaus = gmdistribution.fit(c', nComp);
-figure(2);
 hold on;
 x = min(c(:)) : 0.01 : max(c(:));
 y = pdf(gaussians{nComp},x');
@@ -33,6 +34,7 @@ if(nComp > 1)
   %means that we need to see if it's time to split!
   %is the percept a good indicator of which cluster label there
   %will be on the cost?
+  n_splits = nComp;
   
   for ii = 1:length(obj.previous_experience)
     features(ii,:) = obj.previous_experience(ii).percept;
@@ -46,11 +48,12 @@ if(nComp > 1)
   [cost, ~, ~, best] = test(tree,'crossvalidate',features,labels,'weights',weights);
   tmin = prune(tree,'level',best);
   [cost, ~, ~, best] = test(tree,'crossvalidate',features,labels,'weights',weights);
-  if(cost < 0.2)
+  if(best && cost(best) < 0.2 && numnodes(tmin)>1)
     splitDecision = true;
     disp(cost(best));
     view(tmin);
     pause;
+    tree = tmin;
   else
     splitDecision = false;
   end
