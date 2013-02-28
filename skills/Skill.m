@@ -1,15 +1,17 @@
 classdef Skill
   properties
     name;
+    idx;
     distributions;
     rollout_buffer; %rollout.dmp_parameters_sample, rollout.sensation, rollout.cost
     i_update;
     previous_experience; %contains precept, sample, cost, and i_update
-    
+    tree;
     learning_history; %same structure as used in other locations
+    n_figs; %for 1, just does learning history, for 2 it does cost distributions too
     
     % later previous_experience; %update number, rollout, current distribution
-    % later subskills;
+    subskills;
   end
   
   methods
@@ -19,7 +21,14 @@ classdef Skill
       %         percept     true data to extract from sensation
       % Outputs: true or false based on whether this skill is applicable,
       % given the sensation and percept
-      holds = true;      
+      
+      holds = true; 
+      
+      if ~isempty(obj.tree) && ~isempty(obj.subskills)
+        %do have subskills
+        [label, score] = predict(obj.tree,percept);
+        holds = false;
+      end
     end
    
     
@@ -102,87 +111,43 @@ classdef Skill
         
         if mod(length(obj.previous_experience),50) == 0
           obj.visualize_previous_experience();
-          for ii = 1:length(obj.previous_experience)
-            c(ii) = obj.previous_experience(ii).cost(1);
+          [splitDecision tree] = cluster_costs(obj);
+          if splitDecision == true
+            obj.tree = tree;
           end
-          color = ['r' 'b' 'k' 'g'];
-          for n = 1:2
-            gaussians{n} = gmdistribution.fit(c',n);
-            AIC(n) = gaussians{n}.AIC;
-          end
-          [~, nComp] = min(AIC);
-          gaus = gmdistribution.fit(c', nComp);
-          figure(2);
-          hold on;
-          x = min(c(:)) : 0.01 : max(c(:));
-          y = pdf(gaussians{nComp},x');
-          y = y./max(y(:))*obj.i_update;
-          plot(x,y, color(nComp));
-          
-          idx = cluster(gaussians{nComp},c');
-          for ii = 1:nComp
-            clusters(ii).x = c(idx ==ii);
-            y = 1:obj.i_update;
-            clusters(ii).y = y(idx ==ii);
-            plot(clusters(ii).x, clusters(ii).y,strcat(color(ii),'o'));
-          end
-          
-          if(nComp > 1)
-            %means that we need to see if it's time to split!
-            %is the percept a good indicator of which cluster label there
-            %will be on the cost?
-            
-            for ii = 1:length(obj.previous_experience)
-              features(ii,:) = obj.previous_experience(ii).percept;
-              labels(ii) = idx(ii);
-            end
-            
-            
-            weights = (1:obj.i_update)/obj.i_update;
-            tree = classregtree(features,labels,'method','classification','weights',weights);
-            %tree = ClassificationTree.fit(features,labels,'crossval','on');
-            [cost, ~, ~, best] = test(tree,'crossvalidate',features,labels,'weights',weights);
-            tmin = prune(tree,'level',best);
-            [cost, ~, ~, best] = test(tree,'crossvalidate',features,labels,'weights',weights);
-            if(1)
-              disp(cost(best));
-              view(tmin);
-              pause;
-            end
-              
-          end
-          
         end
         
         
         % Plotting
-     
-         figure(1)
-         
-         % Very difficult to see anything in the plots for many dofs
-         plot_n_dofs = min(n_dofs,3);
-         
-         % Plot rollouts if the plot_rollouts function is available
-         if (isfield(task_solver,'plot_rollouts'))
-           subplot(plot_n_dofs,4,1:4:plot_n_dofs*4)
-           task_solver.plot_rollouts(gca,task_instance,cost_vars)
-           title('Visualization of roll-outs')
-         end
-         if(plot_me)
-           % Plot learning histories
-           if (obj.i_update>0 && ~isempty(obj.learning_history))
-             plotlearninghistory(obj.learning_history);
-             if (isfield(task_instance,'plotlearninghistorycustom'))
-               figure(11)
-               task_instance.plotlearninghistorycustom(obj.learing_history)
-             end
-           end
-           
-           plot_me = 0;
-         end
- 
-      end %end if ( precondition_holds )
-      
+        if obj.n_figs >= 1
+          figure(obj.idx*obj.n_figs + 1)
+          
+          % Very difficult to see anything in the plots for many dofs
+          plot_n_dofs = min(n_dofs,3);
+          
+          % Plot rollouts if the plot_rollouts function is available
+          if (isfield(task_solver,'plot_rollouts'))
+            subplot(plot_n_dofs,4,1:4:plot_n_dofs*4)
+            task_solver.plot_rollouts(gca,task_instance,cost_vars)
+            title('Visualization of roll-outs')
+          end
+          if(plot_me)
+            % Plot learning histories
+            if (obj.i_update>0 && ~isempty(obj.learning_history))
+              plotlearninghistory(obj.learning_history);
+              if (isfield(task_instance,'plotlearninghistorycustom'))
+                figure(11)
+                task_instance.plotlearninghistorycustom(obj.learing_history)
+              end
+            end
+            
+            plot_me = 0;
+          end
+        end
+      else %end if ( precondition_holds )
+        [label, costs] = predict(obj.tree,percept);
+        obj.subskills(label) = solve_task_instance(obj.subskills(label),task_intance,task_solver, percept);
+      end
     end %end solve_task_instance
     
     function print(obj)
@@ -205,7 +170,7 @@ classdef Skill
     end
     
     function visualize_previous_experience(obj)
-      figure(2)
+      figure(obj.idx*obj.n_figs + 2)
       clf;
       hold on;
       for ii = 1:length(obj.previous_experience)
@@ -245,6 +210,8 @@ function obj = Skill_test_function
    obj = Skill('Test skill',distributions);
    obj.rollout_buffer = [];
    obj.i_update = 0;
+   obj.n_figs = 2;
+   obj.idx = 0;
    
    while obj.i_update < 400
      if(rand(1)>0.5)
