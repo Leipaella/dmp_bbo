@@ -11,7 +11,7 @@ for ii = 1:length(obj.previous_experience)
 end
 color = ['r' 'b' 'k' 'g'];
 for n = 1:2
-  gaussians{n} = gmdistribution.fit(c',n);
+  gaussians{n} = gmdistribution.fit(c',n,'Regularize',0.00001);
   AIC(n) = gaussians{n}.AIC;
 end
 [~, nComp] = min(AIC);

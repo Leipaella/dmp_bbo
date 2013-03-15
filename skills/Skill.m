@@ -43,7 +43,7 @@ classdef Skill
       %     - put results in rollout_buffer
       %     - put results in previous experience
       
-      K=20;
+      K=10;
       plot_me = 0;
       n_dofs = length(obj.distributions);
 
@@ -72,7 +72,7 @@ classdef Skill
           %reshape the rollouts to work nicely with the
           %update_distributions function
           for ii = 1:length(obj.rollout_buffer)
-            s(:,ii,:) = squeeze(obj.rollout_buffer{ii}.dmp_parameters_sample);
+            s(:,ii,:) = squeeze(obj.rollout_buffer{ii}.dmp_parameters_sample)';
             c(ii,:) = obj.rollout_buffer{ii}.cost;
           end
           
@@ -112,14 +112,18 @@ classdef Skill
         if mod(length(obj.previous_experience),50) == 0
           fig = obj.idx*obj.n_figs + 2;
           obj.visualize_previous_experience(fig);
-          [splitDecision tree n_splits] = cluster_costs(obj,fig);
+          %[splitDecision tree n_splits] = percept_cost_direct_correlation(obj, fig);
+          [splitDecision tree n_splits] = split_and_merge_by_feature(obj, fig);
+          %[splitDecision tree n_splits] = cluster_costs(obj,fig);
           if splitDecision == true
+            disp(['Took ' num2str(obj.i_update) ' updates to split']);
             obj.tree = tree;
             obj.subskills = Skill(strcat(obj.name, '_sub', num2str(1)),obj.distributions);
             obj.subskills.idx = obj.idx + 1;
             obj.subskills.n_figs = 2;
             for jj = 2:n_splits
               obj.subskills(jj) = obj.subskills(jj-1);
+              obj.subskills(jj).name = strcat(obj.name, '_sub', num2str(jj));
               obj.subskills(jj).idx = obj.subskills(jj-1).idx + 1;
             end
           end
@@ -135,11 +139,11 @@ classdef Skill
           
           % Plot rollouts if the plot_rollouts function is available
           if (isfield(task_solver,'plot_rollouts'))
-            subplot(plot_n_dofs,4,1:4:plot_n_dofs*4)
+            %subplot(plot_n_dofs,4,1:4:plot_n_dofs*4)
             task_solver.plot_rollouts(gca,task_instance,cost_vars)
             title('Visualization of roll-outs')
           end
-          if(plot_me)
+          if(0)
             % Plot learning histories
             if (obj.i_update>0 && ~isempty(obj.learning_history))
               plotlearninghistory(obj.learning_history);
@@ -206,6 +210,8 @@ function obj = Skill_test_function
 % For each task seen, calls the function solve_task_instance
 % Plots
 
+   close all;
+
    n_dims = 2;
    n_dofs = 2;
    for i_dof = 1:n_dofs
@@ -222,12 +228,11 @@ function obj = Skill_test_function
    obj.idx = 0;
    count = 0;
    while count < 800
-     if(rand(1)>0.5)
+     percept = rand([1 5]);
+     if(percept(1)>0.5)
        task = task_viapoint([0.4 0.7],0.3);
-       percept = [1 rand([1 4])];
      else
        task = task_viapoint([0.7 0.4],0.3);
-       percept = [0 rand([1 4])];
      end
      task_solver = task_viapoint_solver_dmp(g,y0,0);
      obj = obj.solve_task_instance(task,task_solver,percept);

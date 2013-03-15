@@ -26,13 +26,17 @@ if max(abs(rho)) > 0.3
   p = percept(:,ii);
   [sorted_p ind] = sort(p);
   sorted_c = c(ind);
+  sorted_w = weights(ind);
   hold on;
   diff(ii) = 0;
   limit = 0;
   %slide the threshold until there's a biggest variance in mean
-  for jj = 10:size(percept,1)-10;
+  for jj = 20:size(percept,1)-20;
     lower_mean = mean(sorted_c(1:jj));
     upper_mean = mean(sorted_c(jj:end));
+    
+    %lower_mean = mean(sorted_c(1:jj).*sorted_w(1:jj))/sum(sorted_w(1:jj));
+    %upper_mean = mean(sorted_c(jj:end).*sorted_w(jj:end))/sum(sorted_w(jj:end));
     if abs(upper_mean - lower_mean) > diff
       diff = abs(upper_mean - lower_mean);
       limit = jj;
@@ -51,6 +55,7 @@ if max(abs(rho)) > 0.3
   view(tree);
   splitDecision = true;
   n_splits = 2;
+  pause
 else
   splitDecision = false;
   tree = [];
