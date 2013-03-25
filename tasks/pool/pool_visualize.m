@@ -14,6 +14,13 @@ function out = pool(varargin)
 %  - out is a matrix with the final positions of the two balls. 
 %    enemy; cue. [ex ey; x y]
 
+ff = figure('color',[1 1 1],'me','n','nu','on');
+he = uicontrol('sty','e','ba','w','un','n','p',[.04 .1 .1 .05],'str','0 90','visible','off');
+hhs = uicontrol('sty','slider','un','n','p',[.02 .1 .1 .05],'min',-.2,'max',4*pi+.2,'sliderstep',[.0005,.01],...
+  'callback',@chs,'value',1.5*pi);
+hhs2 = uicontrol('sty','slider','un','n','p',[.13 .1 .025 .15],'min',1e3,'max',1e4,'sliderstep',[.001,.1],...
+  'callback',@chs,'value',3e3);
+
 if(length(varargin) == 3)
   single = true;
 else
@@ -21,16 +28,6 @@ else
   single = false;
   out = [];
 end
-
-ff = figure('color',[1 1 1],'me','n','nu','on');
-
-he = uicontrol('sty','e','ba','w','un','n','p',[.04 .1 .1 .05],'str','0 90','visible','off');
-hhs = uicontrol('sty','slider','un','n','p',[.02 .1 .1 .05],'min',-.2,'max',4*pi+.2,'sliderstep',[.0005,.01],...
-  'callback',@chs,'value',1.5*pi);
-hhs2 = uicontrol('sty','slider','un','n','p',[.13 .1 .025 .15],'min',1e3,'max',1e4,'sliderstep',[.001,.1],...
-  'callback',@chs,'value',3e3);
-
-
 
   function chs(varargin)
     
@@ -116,12 +113,12 @@ aaa=[-5 -5 0;
 
 aaa(:,1) = aaa(:,1)*.5;
 b = [1 2 6 5;2 3 7 6;3 4 8 7;4 1 5 8;1 2 3 4;5 6 7 8];
-%patch('vertices',aaa,'faces',b,'edgecolor','w','facecolor',[.0 .5 0],...
-%  'facevertexalphadata',0.5,'facealpha','flat');
-%view(3)
-%rotate3d
-%xlabel('X')
-%ylabel('Y')
+patch('vertices',aaa,'faces',b,'edgecolor','w','facecolor',[.0 .5 0],...
+  'facevertexalphadata',0.5,'facealpha','flat');
+view(3)
+rotate3d
+xlabel('X')
+ylabel('Y')
 
 colormap([1,1,1;0,0,0;1,1,0;1,0,1;0,1,1;1,0,0;0,1,0;0,0,1;.5,.5,.5])
 if(single)
@@ -212,9 +209,9 @@ hold on
 
   function go1(varargin)
     set(findobj('type','uicontrol'),'enable','off')
-    %set(ue,'visible','on')
+    set(ue,'visible','on')
     pt = str2num(get(he,'string')); %#ok<*ST2NM>
-    %delete(findobj('type','line'))
+    delete(findobj('type','line'))
     M(1) = 1;
     
     X = (cell2mat(cellfun(@max,cellfun(@max,get(H,'xdata'),'un',0),'un',0)) + ...
@@ -252,7 +249,6 @@ hold on
         end
         ccc = ccc + 1;
         
-        %for each of the balls
         for k = 1:numel(H)
           if M(k)
             B = BB(k,:);
@@ -280,12 +276,69 @@ hold on
             if B(1)^2 + B(2)^2 < 5e4
               M(k) = 0;
             end
-         
             
-            %drawnow()
+            if sum(inpolygon(ctr(1),ctr(2),get(ph1,'xdata'),get(ph1,'ydata')))
+              if k == 1
+                M(k) = []; H(k) = []; delete(h);
+                cla
+                msgbox('You Lose!')
+                return
+              end
+              M(k) = []; H(k) = []; X(k) = [];Y(k) = []; delete(h); BB(k,:) = [];break
+            end
+            if sum(inpolygon(ctr(1),ctr(2),get(ph2,'xdata'),get(ph2,'ydata')))
+              if k == 1
+                M(k) = []; H(k) = []; delete(h);
+                cla
+                msgbox('You Lose!')
+                return
+              end
+              M(k) = []; H(k) = []; X(k) = [];Y(k) = []; delete(h); BB(k,:) = [];break
+            end
+            if sum(inpolygon(ctr(1),ctr(2),get(ph3,'xdata'),get(ph3,'ydata')))
+              if k == 1
+                M(k) = []; H(k) = []; delete(h);
+                cla
+                msgbox('You Lose!')
+                return
+              end
+              M(k) = []; H(k) = []; X(k) = [];Y(k) = []; delete(h); BB(k,:) = [];break
+            end
+            if sum(inpolygon(ctr(1),ctr(2),get(ph4,'xdata'),get(ph4,'ydata')))
+              if k == 1
+                M(k) = []; H(k) = []; delete(h);
+                cla
+                msgbox('You Lose!')
+                return
+              end
+              M(k) = []; H(k) = []; X(k) = [];Y(k) = []; delete(h); BB(k,:) = [];break
+            end
+            if sum(inpolygon(ctr(1),ctr(2),get(ph5,'xdata'),get(ph5,'ydata')))
+              if k == 1
+                M(k) = []; H(k) = []; delete(h);
+                cla
+                msgbox('You Lose!')
+                return
+              end
+              M(k) = []; H(k) = []; X(k) = [];Y(k) = []; delete(h); BB(k,:) = [];break
+            end
+            if sum(inpolygon(ctr(1),ctr(2),get(ph6,'xdata'),get(ph6,'ydata')))
+              if k == 1
+                M(k) = []; H(k) = []; delete(h);
+                cla
+                msgbox('You Lose!')
+                return
+              end
+              M(k) = []; H(k) = []; X(k) = [];Y(k) = []; delete(h); BB(k,:) = [];break
+            end
+            
+            drawnow()
           end
         end
-
+        if length(H) == 0
+          msgbox('You win!')
+          return
+        end
         vz = volume_intersect_sphere_analytical(X,Y);
         [v1,v2] = find(vz);
         V3 = [v1,v2];
@@ -367,7 +420,6 @@ hold on
           HT = zeros(1,length(X));
         end
         
-        %% Handle out of bounds on the table
         if any(X <= -24)
           fB = find(X <= -24);
           for j = 1:sum((X <= -24))
@@ -430,7 +482,6 @@ hold on
             end
           end
         end
-        %%
         
         isB(~(Y <= -49 | Y >= 49 | X >= 24 | X <= -24) & M') = 0;
         
@@ -523,7 +574,6 @@ if(single)
   go1(num2str(varargin{2}));
   %data we want - location of thrown ball, location of enemy ball
   out = [X(1) Y(1); X(2) Y(2)];
-  out2 = ff;
   close(ff);
 end
 

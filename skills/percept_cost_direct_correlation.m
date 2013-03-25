@@ -31,7 +31,7 @@ if max(abs(rho)) > 0.3
   diff(ii) = 0;
   limit = 0;
   %slide the threshold until there's a biggest variance in mean
-  for jj = 20:size(percept,1)-20;
+  for jj = 20:size(percept,1)-19;
     lower_mean = mean(sorted_c(1:jj));
     upper_mean = mean(sorted_c(jj:end));
     

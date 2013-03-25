@@ -1,4 +1,4 @@
-function [task_solver] = task_pool_solver
+function [task_solver] = visualization_of_task_pool_solver
 
 
 
@@ -14,13 +14,10 @@ task_solver.plot_rollouts = @plot_rollouts_pool;
     %sx = thetas(1);
     %power = thetas(2);
     %angle = thetas(3);
-    
+    power = thetas;
     sx = 0;
-    power = thetas(1);
     angle = 0;
-    
-    
-    cost_vars = pool(task.enemy,[angle power], [sx -40]);
+    cost_vars = pool_visualize(task.enemy,[angle power], [sx -40]);
     
   end
 

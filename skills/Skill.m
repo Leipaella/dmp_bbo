@@ -43,9 +43,10 @@ classdef Skill
       %     - put results in rollout_buffer
       %     - put results in previous experience
       
-      K=10;
+      K=20;
       plot_me = 0;
       n_dofs = length(obj.distributions);
+      n_dims = length(obj.distributions.mean);
 
       sensation = [];
       % check precondition
@@ -53,8 +54,11 @@ classdef Skill
         obj.i_update = obj.i_update + 1;
        
         %sample dmp parameters from distribution (1 at a time)
-        samples = generate_samples(obj.distributions,1,0);
-        
+        if n_dims >1
+            samples = generate_samples(obj.distributions,1,0);
+        else
+            samples = mvnrnd(obj.distributions.mean, obj.distributions.covar, 1);
+        end
         %execute skill, record relevant cost variables
         cost_vars = task_solver.perform_rollouts(task_instance,samples);
         
@@ -106,12 +110,12 @@ classdef Skill
         end
      
         
-        %if more than, say, 50 samples taken, time to examine if it's worth
+        %if more than, say, 30 samples taken, time to examine if it's worth
         %splitting the skill.
         
-        if mod(length(obj.previous_experience),50) == 0
+        if mod(length(obj.previous_experience),60) == 0
           fig = obj.idx*obj.n_figs + 2;
-          obj.visualize_previous_experience(fig);
+          %obj.visualize_previous_experience(fig);
           %[splitDecision tree n_splits] = percept_cost_direct_correlation(obj, fig);
           [splitDecision tree n_splits] = split_and_merge_by_feature(obj, fig);
           %[splitDecision tree n_splits] = cluster_costs(obj,fig);
@@ -120,20 +124,30 @@ classdef Skill
             obj.tree = tree;
             obj.subskills = Skill(strcat(obj.name, '_sub', num2str(1)),obj.distributions);
             obj.subskills.idx = obj.idx + 1;
-            obj.subskills.n_figs = 2;
+            obj.subskills.n_figs = 3;
+            
+            %hard coded but need to make this parameterized for other
+            %problems.
+            %mean can start out the same, but need to encourage exploring
+            %more at first! Or else won't discover new techniques...
+            %obj.subskills.distributions.covar = diag([5 1000^2 1000^2]);
+            obj.subskills.distributions.covar = 1000^2;
+            
+            
             for jj = 2:n_splits
               obj.subskills(jj) = obj.subskills(jj-1);
               obj.subskills(jj).name = strcat(obj.name, '_sub', num2str(jj));
               obj.subskills(jj).idx = obj.subskills(jj-1).idx + 1;
             end
           end
+         
         end
         
         
         % Plotting
         if obj.n_figs >= 1
           figure(obj.idx*obj.n_figs + 1)
-          
+
           % Very difficult to see anything in the plots for many dofs
           plot_n_dofs = min(n_dofs,3);
           
@@ -143,8 +157,9 @@ classdef Skill
             task_solver.plot_rollouts(gca,task_instance,cost_vars)
             title('Visualization of roll-outs')
           end
-          if(0)
+          if(plot_me && 0)
             % Plot learning histories
+            figure(obj.idx*obj.n_figs + 3)
             if (obj.i_update>0 && ~isempty(obj.learning_history))
               plotlearninghistory(obj.learning_history);
               if (isfield(task_instance,'plotlearninghistorycustom'))
