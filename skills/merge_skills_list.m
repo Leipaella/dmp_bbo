@@ -20,6 +20,8 @@ for i_skill = 1:n_skills
   end
 end
 
+disp([num2str(length(indices)) ' skills have converged']);
+
 %compare each skill to each of the others that are converged
 for ii = 1:length(indices)
   current_skill = skill_list(indices(ii)).skill;
@@ -30,6 +32,9 @@ for ii = 1:length(indices)
       if merge
         %add an 'OR' case to the current skill and delete compare skill
         disp(strcat('Merge skill ', num2str(indices(ii)), ' with skill ', num2str(indices(jj))));
+        skill_list(indices(ii)).conditions = cat(1,skill_list(indices(ii)).conditions,skill_list(indices(jj)).conditions);
+        %now delete the compare skill
+        skill_list(indices(jj)) = [];
       end
     end
   end
@@ -42,8 +47,9 @@ end
 function merge = comparison_test_means(skill1, skill2)
 
 %see the probability of choosing skill2's mean from the skill1 distribution
-prob = mvnpdf(skill2.mean,skill1.mean,skill1.covar);
+prob = mvnpdf(skill2.distributions.mean,skill1.distributions.mean,skill1.distributions.covar);
 
+disp(['Probability they are the same action = ' num2str(prob)]);
 if prob > 0.75
   merge = true;
 else

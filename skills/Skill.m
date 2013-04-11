@@ -1,6 +1,7 @@
 classdef Skill
   properties
     name;
+    K;
     idx;
     distributions;
     rollout_buffer; %rollout.dmp_parameters_sample, rollout.sensation, rollout.cost
@@ -26,7 +27,8 @@ classdef Skill
       
       if ~isempty(obj.tree) && ~isempty(obj.subskills)
         %do have subskills
-        label = obj.tree.eval(percept);
+        
+        %label = obj.tree.eval(percept);
         holds = false;
       end
     end
@@ -43,10 +45,11 @@ classdef Skill
       %     - put results in rollout_buffer
       %     - put results in previous experience
       
-      K=20;
+      K=obj.K;
       plot_me = 0;
-      n_dofs = length(obj.distributions);
-      n_dims = length(obj.distributions.mean);
+      n_dofs = size(obj.distributions,2);
+      mean = obj.distributions.mean;
+      n_dims = size(mean,2);
 
       sensation = [];
       % check precondition
@@ -97,6 +100,9 @@ classdef Skill
           
         end
         
+        
+        
+        
         %add to previous history!
         previous.percept = percept;
         previous.sample = samples;
@@ -108,54 +114,90 @@ classdef Skill
         else
           obj.previous_experience(end+1) = previous;
         end
-     
-        
-        %if more than, say, 30 samples taken, time to examine if it's worth
-        %splitting the skill.
-        
-        if mod(length(obj.previous_experience),60) == 0
-          fig = obj.idx*obj.n_figs + 2;
-          %obj.visualize_previous_experience(fig);
-          %[splitDecision tree n_splits] = percept_cost_direct_correlation(obj, fig);
-          [splitDecision tree n_splits] = split_and_merge_by_feature(obj, fig);
-          %[splitDecision tree n_splits] = cluster_costs(obj,fig);
-          if splitDecision == true
-            disp(['Took ' num2str(obj.i_update) ' updates to split']);
-            obj.tree = tree;
-            obj.subskills = Skill(strcat(obj.name, '_sub', num2str(1)),obj.distributions);
-            obj.subskills.idx = obj.idx + 1;
-            obj.subskills.n_figs = 3;
-            
-            %hard coded but need to make this parameterized for other
-            %problems.
-            %mean can start out the same, but need to encourage exploring
-            %more at first! Or else won't discover new techniques...
-            %obj.subskills.distributions.covar = diag([5 1000^2 1000^2]);
-            obj.subskills.distributions.covar = 1000^2;
-            
-            
-            for jj = 2:n_splits
-              obj.subskills(jj) = obj.subskills(jj-1);
-              obj.subskills(jj).name = strcat(obj.name, '_sub', num2str(jj));
-              obj.subskills(jj).idx = obj.subskills(jj-1).idx + 1;
-            end
-          end
-         
+    
+        if mod(length(obj.previous_experience),obj.K) == 0
+           fig = obj.idx*obj.n_figs + 2;
+           %reformat most recent K samples (i.e. all from the same dist)
+           for ii = 1 : obj.K;
+             percepts(ii,:) = obj.previous_experience(end - obj.K + ii).percept;
+             costs(ii,:) = obj.previous_experience(end - obj.K + ii).cost;
+           end
+           [split_decision split_feature split_value] = feature_split_cluster_costs(percepts,costs,0.09,fig);
+           %[split_decision split_feature split_value] = feature_split_sliding(percepts,costs,0.09,fig);
+           
+           split_decision = false;
+           if split_decision
+             %create a tree to make the decision we want... hacking matlab
+             %yuck
+             percept1 = zeros([1 length(percepts(1,:))]);
+             percept2 = percept1;
+             %
+             %percept1(split_feature) = split_value - 1;
+             %percept2(split_feature) = split_value + 1;
+             %labels = [1;2];
+             %tree = classregtree([percept1;percept2],labels,'method','classification');
+             
+             obj.subskills = obj;
+             obj.subskills.idx = obj.idx + 1;
+             obj.subskills(2) = obj;
+             obj.subskills(2).idx = obj.idx + 2;
+             obj.tree.split_feature = split_feature;
+             obj.tree.split_value = split_value;
+             
+             
+           end
+          
         end
+
+        %after a certain number of samples are taken, it's time to examine 
+        %if the skill should be split or not.
+        
+%         if mod(length(obj.previous_experience),60) == 0
+%           fig = obj.idx*obj.n_figs + 2;
+%           
+%           
+%           [split_decision split_feature split_value] = split_2D_gaussians(percepts,costs,fig);
+%           
+%          
+%           if splitDecision == true
+%             disp(['Took ' num2str(obj.i_update) ' updates to split']);
+%             obj.tree = tree;
+%             obj.subskills = Skill(strcat(obj.name, '_sub', num2str(1)),obj.distributions);
+%             obj.subskills.idx = obj.idx + 1;
+%             obj.subskills.n_figs = 3;
+%             obj.subskills.previous_experience = [];
+%             
+%             %hard coded but need to make this parameterized for other
+%             %problems.
+%             %mean can start out the same, but need to encourage exploring
+%             %more at first! Or else won't discover new techniques...
+%             %obj.subskills.distributions.covar = diag([5 1000^2 1000^2]);
+%             %obj.subskills.distributions.covar = 10^2;
+%            %distributions(1).mean = [50 0];
+%            distributions(1).covar = diag([10^2 (pi/2)^2]);
+%             
+%             for jj = 2:n_splits
+%               obj.subskills(jj) = obj.subskills(jj-1);
+%               obj.subskills(jj).name = strcat(obj.name, '_sub', num2str(jj));
+%               obj.subskills(jj).idx = obj.subskills(jj-1).idx + 1;
+%             end
+%           end
+%          
+%        end
         
         
         % Plotting
         if obj.n_figs >= 1
-          figure(obj.idx*obj.n_figs + 1)
-
+          
           % Very difficult to see anything in the plots for many dofs
           plot_n_dofs = min(n_dofs,3);
           
           % Plot rollouts if the plot_rollouts function is available
           if (isfield(task_solver,'plot_rollouts'))
+            %figure(obj.idx*obj.n_figs + 1)
             %subplot(plot_n_dofs,4,1:4:plot_n_dofs*4)
-            task_solver.plot_rollouts(gca,task_instance,cost_vars)
-            title('Visualization of roll-outs')
+            %task_solver.plot_rollouts(gca,task_instance,cost_vars)
+            %title('Visualization of roll-outs')
           end
           if(plot_me && 0)
             % Plot learning histories
@@ -172,8 +214,14 @@ classdef Skill
           end
         end
       else %end if ( precondition_holds )
-        label = obj.tree.eval(percept);
-        obj.subskills(str2double(label{1})) = solve_task_instance(obj.subskills(str2double(label{1})),task_instance,task_solver, percept);
+        if percept(obj.tree.split_feature) < obj.tree.split_value
+          obj.subskills(1) = solve_task_instance(obj.subskills(1),task_instance,task_solver,percept);
+        else
+          obj.subskills(2) = solve_task_instance(obj.subskills(2),task_instance,task_solver,percept);
+        end
+        
+        %label = obj.tree.eval(percept);
+        %obj.subskills(str2double(label{1})) = solve_task_instance(obj.subskills(str2double(label{1})),task_instance,task_solver, percept);
       end
     end %end solve_task_instance
     
@@ -193,6 +241,7 @@ classdef Skill
       obj.name = name;
       obj.distributions = distributions;
       obj.i_update = 0;
+      obj.K = 100;
 
     end
     
