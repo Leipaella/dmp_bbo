@@ -12,11 +12,11 @@ for x = xranges
     balls.teams = [2];
     percepts(ii,1) = x;
     percepts(ii,2) = y;
-    percepts(ii,3) = x == goal(1) && y< goal(2); %is the ball in the way or not
-    percepts(ii,4) = x > goal(1);
-    percepts(ii,5) = y > goal(2);
-    percepts(ii,6) = sqrt((goal(1) - x)^2 + (goal(2) - y)^2);
-    percepts(ii,7) = atan2(goal(2) - y,goal(1) - x);
+    %percepts(ii,3) = ii;
+    percepts(ii,3) = x > goal(1); %is the ball to the right of the goal
+    percepts(ii,4) = y > goal(2); %is the ball behind the goal
+    %percepts(ii,6) = sqrt((goal(1) - x)^2 + (goal(2) - y)^2);
+    %percepts(ii,7) = atan2(goal(2) - y,goal(1) - x);
     tasks(ii) = task_pool(goal,balls,ii,25);
     ii = ii + 1;
   end

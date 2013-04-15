@@ -12,21 +12,27 @@ end
 load(filename);
 
 if nargin < 2
-  figure;
+  f = figure;
 else
-  figure(fig);
+  f = figure(fig);
 end
+set(f,'name','Display skill');
 
 n_tasks = length(tasks);
-n_task_per_row = ceil(sqrt(n_tasks));
+n_rows = ceil(sqrt(n_tasks));
+n_rows = 3;
+n_cols = ceil(n_tasks/n_rows);
 for i_task = 1:n_tasks
-  subplot(n_task_per_row,n_task_per_row,i_task);
+  sp = subplot(n_rows,n_cols,i_task);
   percept = percepts(i_task,:);
   task = tasks(i_task);
   obj2 = recursive(obj,percept);
   sample = obj2.distributions.mean;
   cost_vars = task_solver.perform_rollouts(task,sample);
   task_solver.plot_rollouts(gca,task,cost_vars);
+  set(gca,'XTick',[])
+  set(gca,'YTick',[])
+  title('');
  % solve_task_instance(obj,task,task_solver,percept);
 end
 

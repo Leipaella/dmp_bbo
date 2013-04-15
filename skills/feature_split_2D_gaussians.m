@@ -96,7 +96,7 @@ for i_feature = 1:n_features
   elseif var(c) ~= 0 && var(f) ~= 0             
     %fit a Gaussian mixture model to the data
     for n_gaus = 1:2
-      gaussians{n_gaus} = gmdistribution.fit([f c],n_gaus,'Regularize',0.001,'CovType','diagonal');
+      gaussians{n_gaus} = gmdistribution.fit([f c],n_gaus,'Regularize',0.001,'CovType','full');
       AIC(n_gaus) = gaussians{n_gaus}.AIC;
     end
     [~, nComp] = min(AIC);
@@ -145,7 +145,7 @@ for i_feature = 1:n_features
       if ~test, subplot(1,n_features,i_feature); end;
       plot(f,c,'kx');
       hold on;
-      %ezcontour(@(x,y)pdf(gaus,[x y]),[min(f) max(f)],[min(c) max(c)]);
+      ezcontour(@(x,y)pdf(gaus,[x y]),[min(f)-0.01 max(f)+0.01],[min(c)-0.01 max(c)+0.01]);
       if p_arr(i_feature) < p_thresh
         plot([split_val(i_feature) split_val(i_feature)],[min(c) max(c)],'g');
       end

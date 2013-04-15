@@ -122,7 +122,7 @@ classdef Skill
              percepts(ii,:) = obj.previous_experience(end - obj.K + ii).percept;
              costs(ii,:) = obj.previous_experience(end - obj.K + ii).cost;
            end
-           [split_decision split_feature split_value] = feature_split_cluster_costs(percepts,costs,0.09,fig);
+           [split_decision split_feature split_value] = feature_split_cluster_costs(percepts,costs,0.09);
            %[split_decision split_feature split_value] = feature_split_sliding(percepts,costs,0.09,fig);
            
            split_decision = false;

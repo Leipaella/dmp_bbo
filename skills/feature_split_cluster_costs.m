@@ -2,7 +2,7 @@ function [split_decision split_feature split_value] = feature_split_cluster_cost
 %
 % For each feature: cluster the costs. See if you can predict which cluster
 % a sample will be in based only on its feature. (an extention could be to
-% cluster percept-cost space to find combination of features).
+% cluster percept-cost space to find combination of features)?
 %
 % Inputs:
 %  percepts       -array of percepts with n_samples x n_features, binary or continuous
@@ -18,7 +18,10 @@ function [split_decision split_feature split_value] = feature_split_cluster_cost
 %  split_feature  -the index of the feature to split upon (which column in percepts)
 %  split_value    -the value on which to perform the split (for binary,
 %                  will be 0.5, for continuous will be a number between max
-%                  and min of that feature
+%                  and min of that feature, can either be a single value
+%                  which then divides the skill by [-Inf, split_value] and
+%                  [split_value, Inf] or two values, in which case it is
+%                  the min and max of the center segement.
 
 
 %------------------------------------------------------------------------------
@@ -90,7 +93,7 @@ for i_feature = 1:n_features
       if p_arr(i_feature) < p_thresh
         plot([0.5 0.5],[min(c) max(c)],'g');
       end
-      text(0.52,p+0.02, num2str(p),'FontSize',8);
+      text(0.52,p+0.02, num2str(p_arr(i_feature)),'FontSize',8);
     end
     
   %------------------------------------------------------------------------------
@@ -98,25 +101,25 @@ for i_feature = 1:n_features
   
   else
     %allow up to 3 clusters (for intervals)
-    
     for n_clusters = 1:3
-      [idx, C, sumd] = kmeans([f c],n_clusters,'emptyaction','drop');
+      [idx, C, sumd] = kmeans(c,n_clusters,'emptyaction','singleton');
       dist(n_clusters) = sum(sumd);
     end
     
+    %find the best cluster using F-tests... not implemented yet
     [~,k] = min(dist);
-    [idx, C, sumd] = kmeans([f c],k,'emptyaction','drop');
+    [idx, C, sumd] = kmeans(c,k,'emptyaction','singleton');
     color = ['r';'b';'k'];
     tree = classregtree(f,idx,'method','classification','minparent',ceil(n_samples/10));
     %prune it so as not to overfit the data in a way that won't be visible
     %to us...
     n_levels = max(tree.prunelist);
-    tree = prune(tree,max(n_levels - 2,0));
+    tree = prune(tree,max(n_levels - 1,0));
     
     fit = tree.eval(f);
     cm = confusionmat(idx,str2num(cell2mat(fit)));
     
-    for kk = 1:max(idx)
+    for kk = 1:max(size(cm))
       %ratio of number_wrong / number_right, want this to be small (zero)
       wrong = (sum(cm(kk,:)) + sum(cm(:,kk)) - 2*cm(kk,kk));
       right = cm(kk,kk);
@@ -146,15 +149,18 @@ for i_feature = 1:n_features
     matches = str2num(cell2mat(labels)) == i_correct;
     xmin = find(matches,1,'first');
     xmax = find(matches,1,'last');
-    if plot_en && max_correct < 0.05 && ~isempty(matches)
+    if plot_en && max_correct < 0.05 && ~isempty(matches) && k ~= 1
       plot([x(xmin) x(xmin)],[min(c) max(c)],color(i_correct));
       plot([x(xmax) x(xmax)],[min(c) max(c)],color(i_correct));
       text((x(xmax)+x(xmin))/2,(max(c) + min(c))/2, num2str(max_correct),'FontSize',8);
     end
     
-    
-    p_arr(i_feature) = min(err);
-    split_val{i_feature} = [x(xmin) x(xmax)];
+    if k ~= 1
+      p_arr(i_feature) = min(err);
+      split_val{i_feature} = [x(xmin) x(xmax)];
+    else
+      p_arr(i_feature) = 1;
+    end
     
     
   end
@@ -171,12 +177,11 @@ if pmin < p_thresh
   split_value = split_val{imin};
 else
   split_decision = false;
-  split_feature = [];
+  split_feature = 0;
   split_value = [];
 end
 
 drawnow;
-pause;
 end
 
 

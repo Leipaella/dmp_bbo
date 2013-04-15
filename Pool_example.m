@@ -4,10 +4,16 @@
 
 
 close all;
+clearvars;
+fh = figure(10);
+n_skills_disp = 4;
+
 
 %n_dims = 3;
 n_dofs = 1; %can control starting x location, angle, and force.
 
+
+p_thresh = 0.15;
 
 %get the initial values somewhere in the ballpark
 %sx power angle
@@ -15,8 +21,8 @@ n_dofs = 1; %can control starting x location, angle, and force.
 %distributions(1).covar = diag([5 1000^2 1000^2]);
 
 n_dims = 2;
-distributions(1).mean = [45 pi/2];
-distributions(1).covar = diag([5^2 (pi/8)^2]);
+distributions(1).mean = [104 1.53];
+distributions(1).covar = diag([0.7 0.0001]);
 
 
 
@@ -30,126 +36,121 @@ count = 0;
 goal = [25 75];
 
 %skill list
-skill_list(1).skill = obj;
 skill_list(1).conditions = {[]};
+skill_list(1).skill = obj;
 
 
+[tasks percepts n_tasks] = generate_unique_tasks(goal);
 
+disp_n_skills = 4;
+ 
 while count < 1000
   
-  %generation 1 happy ball and 1 enemy ball
-  %   x = ceil(50*rand([1 2]));
-  %   y = ceil(100*rand([1 2]));
-  %   teams = [1 2];
-  %   balls.x = x;
-  %   balls.y = y;
-  %   balls.teams = teams;
-  %
-  p = randperm(2);
-  [tasks percepts] = generate_unique_tasks(goal);
+
+  %--------------------------------------------------------------------------
+  % Generate a task and percept
   
-  
-  
-  
-  %percept can be their polar coordinates from the goal for example. and
-  %which team
-  %r = sqrt((x - goal(1)).^2 + (y - goal(2)).^2);
-  %t = atan2((y - goal(2)),(x - goal(1)));
-  %percept(1:2) = r;
-  %percept(3:4) = t;
-  %percept(5:6) = teams;
-  
-  %make the percept simple
-  %percept = [];
-  %percept(1) = p(1) - 1;
-  
-  %task = task_pool(goal,balls);
-  
+  p = randperm(n_tasks);
   task = tasks(p(1));
   percept = percepts(p(1),:);
   task_solver = task_pool_solver;
   
-  for ii = length(skill_list):-1:1
+  
+  %--------------------------------------------------------------------------
+  %see if skill holds - basically precondition test
+  %
+  indices = find_applicable_skills(percept, skill_list);
+  
+  %--------------------------------------------------------------------------
+  %execute the first applicable skill
+  %
+  first = min(indices);
+  if isempty(first)
+    error('The percept does not meet any conditions in the skill list');
+  end
+  skill_list(first).skill = solve_task_instance(skill_list(first).skill,task,task_solver,percept);
     
-    %
-    %see if skill holds - basically precondition test
+  
+  
+  %--------------------------------------------------------------------------
+  % loop through the skill list
+  %
+   
+  n_skills = length(skill_list);
+  for ii = 1:n_skills;
+    
+    %--------------------------------------------------------------------------
+    % see if the buffer has 1 entry - indicates the distribution was just
+    % updated, so can update the left plot.
     %
     
-    conditions = skill_list(ii).conditions; %this is a cell array
-    if isempty(conditions)
-      answer2 = true;
-    else
+    c_skill = skill_list(ii).skill;
+    if length(c_skill.rollout_buffer) == 1
+      figure(fh);
+      rows = disp_n_skills;
+      cols = 2*length(percept);
+      t = meshgrid(1:cols:rows*cols,1:cols/2)'-1 + meshgrid(1:cols/2,1:rows);
+      subplot(rows,cols,t(:));
+      hold on;
+      covar = c_skill.distributions.covar;
+      theta = c_skill.distributions.mean;
+      n_dims  = length(c_skill.distributions.mean);
+      plot_n_dim = min(n_dims,3);
+      h_covar = error_ellipse(real(squeeze(covar(1:plot_n_dim,1:plot_n_dim))),theta(1:plot_n_dim));
+      drawnow;
       
-      answer2 = false;
-      for jj = 1:length(conditions)
-        and_condition = conditions{jj};
-        %complete the 'AND'
-        answer = true;
-        for kk = 1:3:(length(and_condition))
-          feature_i = and_condition(kk);
-          min_val = and_condition(kk + 1);
-          max_val = and_condition(kk + 2);
-          if answer && percept(feature_i) >= min_val && percept(feature_i) <= max_val
-            answer = true;
-          else
-            answer = false;
-          end
-        end %finished going through all the 'AND' operations for this entry
-        
-        %complete the 'OR'
-        if answer2 || answer
-          answer2 = true;
-        else
-          answer2 = false;
-        end
-        
+    end
+    
+    %--------------------------------------------------------------------------
+    % see if the buffer is full - indicates that we should see if it's time
+    % to split or not, and plot appropriately. If split, create two new
+    % entries in the skill_list and delete the old entry
+    %
+    
+    if length(c_skill.rollout_buffer) == c_skill.K
+      for kk = 1 : c_skill.K;
+        ps(kk,:) = c_skill.previous_experience(end - c_skill.K + kk).percept;
+        cs(kk,:) = c_skill.previous_experience(end - c_skill.K + kk).cost;
       end
       
-    end
-    %now answer2 contains whether the skill is applicable or not.
-    
-    if(answer2) %if applicable, perform skill
-      skill_list(ii).skill = solve_task_instance(skill_list(ii).skill,task,task_solver,percept);
-    end
-  end
-  
-  %
-  %now see if splitting is needed.
-  %
-  
-  if mod(count,50) == 0
-    
-    n_skills = length(skill_list);
-    for ii = 1:n_skills;
-      [split_decision split_feature split_value] = mean_divergence(skill_list(ii).skill);
-      %using only binary features
-      if(split_decision)
-        
-        disp(strcat('Split based on feature ', num2str(split_feature)));
-        %create a copy
-        new_skill = skill_list(ii).skill;
-        new_skill.idx = length(skill_list) + 1;
-        %clear previous experience so it won't keep splitting
-        new_skill.previous_experience(1:end) = [];
-        skill_list(ii).skill.previous_experience(1:end) = [];
-        %create the two conditions
-        for jj = 1:length(skill_list(ii).conditions)
-          cond = skill_list(ii).conditions{jj};
-          new_cond = cat(2, cond, [split_feature 0 split_value]);
-          new_cond2 = cat(2, cond, [split_feature split_value 1]);
-          cond1{jj} = new_cond;
-          cond2{jj} = new_cond2;
-        end
-        skill_list(ii).conditions = cond1;
-        skill_list(end+1).skill = new_skill;
-        skill_list(end).conditions = cond2;
+      %for each feature, subplot
+      figure(fh);
+      split_decision = [];
+      split_feature = [];
+      split_values = {};
+      for i_f = 1:size(ps,2)
+        rows = disp_n_skills;
+        cols = 2*length(percept);
+        i_row = ii;
+        i_col = cols/2 + i_f;
+        t = (i_row-1)*cols + i_col;
+        subplot(rows,cols,t,'replace');
+        [sd sf sv] = feature_split_cluster_costs(ps(:,i_f),cs,p_thresh,1,1);
+        split_decision(i_f) = sd;
+        split_feature(i_f) = sf;
+        split_values{i_f} = sv;
       end
+      
+      i_first = find(split_decision,1,'first');
+      if ~isempty(i_first)
+        [sub1 sub2] = copy_and_change(skill_list(ii),split_feature(i_first),split_values{i_first});
+        
+        skill_list(end+1).skill = sub1.skill;
+        skill_list(end).conditions = sub1.conditions;
+        skill_list(end+1).skill = sub2.skill;
+        skill_list(end).conditions = sub2.conditions;
+        skill_list(ii) = [];
+      end
+
     end
-    
+  
   end
+  
+  
+  %--------------------------------------------------------------------------
+  %see if merging is needed
   %
-  %now see if merging is needed.
-  %
+  
   if mod(count,50) == 25
     %skill_list = merge_skills_list(skill_list);
   end
@@ -199,7 +200,8 @@ while count < 1000
   %
   %   obj = obj.solve_task_instance(task,task_solver,percept);
   %   count = count+1;
-  
+  drawnow
+  disp(count);
   
 end
 
