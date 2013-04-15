@@ -21,8 +21,8 @@ p_thresh = 0.15;
 %distributions(1).covar = diag([5 1000^2 1000^2]);
 
 n_dims = 2;
-distributions(1).mean = [104 1.53];
-distributions(1).covar = diag([0.7 0.0001]);
+distributions(1).mean = [38 pi/2];
+distributions(1).covar = diag([2^2 (5*pi/180)^2]);
 
 
 
@@ -38,13 +38,13 @@ goal = [25 75];
 %skill list
 skill_list(1).conditions = {[]};
 skill_list(1).skill = obj;
-
+skill_list(1).history = [];
 
 [tasks percepts n_tasks] = generate_unique_tasks(goal);
 
 disp_n_skills = 4;
  
-while count < 1000
+while count < 5000
   
 
   %--------------------------------------------------------------------------
@@ -92,11 +92,20 @@ while count < 1000
       t = meshgrid(1:cols:rows*cols,1:cols/2)'-1 + meshgrid(1:cols/2,1:rows);
       subplot(rows,cols,t(:));
       hold on;
-      covar = c_skill.distributions.covar;
-      theta = c_skill.distributions.mean;
       n_dims  = length(c_skill.distributions.mean);
       plot_n_dim = min(n_dims,3);
+      for hist = 1:length(skill_list(ii).history)
+        theta = skill_list(ii).history(hist).theta;
+        covar = skill_list(ii).history(hist).covar;
+        h_covar = error_ellipse(real(squeeze(covar(1:plot_n_dim,1:plot_n_dim))),theta(1:plot_n_dim));
+        set(h_covar,'Color',0.8*ones(1,3),'LineWidth',1);
+      end
+      covar = c_skill.distributions.covar;
+      theta = c_skill.distributions.mean;
       h_covar = error_ellipse(real(squeeze(covar(1:plot_n_dim,1:plot_n_dim))),theta(1:plot_n_dim));
+      set(h_covar,'Color',[1 0 0],'LineWidth',1);
+      skill_list(ii).history(end+1).theta = theta;
+      skill_list(ii).history(end).covar = covar;
       drawnow;
       
     end
@@ -124,8 +133,12 @@ while count < 1000
         i_row = ii;
         i_col = cols/2 + i_f;
         t = (i_row-1)*cols + i_col;
-        subplot(rows,cols,t,'replace');
-        [sd sf sv] = feature_split_cluster_costs(ps(:,i_f),cs,p_thresh,1,1);
+        if t < rows*cols
+          subplot(rows,cols,t,'replace');
+          [sd sf sv] = feature_split_cluster_costs(ps(:,i_f),cs,p_thresh,1,1);
+        else
+          [sd sf sv] = feature_split_cluster_costs(ps(:,i_f),cs,p_thresh);
+        end
         split_decision(i_f) = sd;
         split_feature(i_f) = sf;
         split_values{i_f} = sv;
@@ -137,13 +150,15 @@ while count < 1000
         
         skill_list(end+1).skill = sub1.skill;
         skill_list(end).conditions = sub1.conditions;
+        skill_list(end).history = skill_list(ii).history;
         skill_list(end+1).skill = sub2.skill;
         skill_list(end).conditions = sub2.conditions;
+        skill_list(end).history = skill_list(ii).history;
         skill_list(ii) = [];
       end
 
     end
-  
+    
   end
   
   

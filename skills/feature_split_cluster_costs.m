@@ -93,7 +93,7 @@ for i_feature = 1:n_features
       if p_arr(i_feature) < p_thresh
         plot([0.5 0.5],[min(c) max(c)],'g');
       end
-      text(0.52,p+0.02, num2str(p_arr(i_feature)),'FontSize',8);
+      text(0.52,p_arr(i_feature)+0.02, num2str(p_arr(i_feature)),'FontSize',8);
     end
     
   %------------------------------------------------------------------------------

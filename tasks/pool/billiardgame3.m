@@ -1,4 +1,4 @@
-function [X, Y, Z] = billiardgame3(x,y,v,theta, teams)
+function [X, Y] = billiardgame3(x,y,v,theta, teams)
 %function [X,Y,Z] = billiardgame3(N,massmax,vmax,T)
 %takes in a vector of locations for billiard balls in the form of 5 arrays:
 % x, y, v, theta,teams
@@ -21,7 +21,6 @@ vz = zeros(1,N);
 %initial positions
 X0 = x;
 Y0 = y;
-Z0 = rad*1.5*ones(1,N);
 
 
 
@@ -29,10 +28,10 @@ Z0 = rad*1.5*ones(1,N);
 %balls on a table.  The balls have random mass between 0 and massmax,
 %velocity between 0 and vmax, and plays for T seconds, with timestep .01.
 
-tstep = 0.01;
+tstep = 0.05;
 T = 10; %max time, but will return when movement stops.
 
-[X,Y,Z] = billiards3(w,l,h,M,vx,vy,vz,X0,Y0,Z0,T,rad,tstep);
+[X,Y] = billiards3(w,l,h,M,vx,vy,vz,X0,Y0,T,rad,tstep);
 
 
 %figure
@@ -103,7 +102,7 @@ v2y = (v2yn + v2yt);
 
 end
 
-function [A,W] = collisions3(X,Y,Z,rad,w,l,h)
+function [A,W] = collisions3(X,Y,rad,w,l)
 %takes vectors X, Y, and Z where each entry contains the x- or y-position of
 %a billiard ball and returns an n x 2 matrix A containing the indices where
 %there is a collision (assuming balls have radius rad),
@@ -118,22 +117,15 @@ E = X<=0;
 E = +E;
 F = Y<=0;
 F = +F;
-G = Z>=h;
-G = +G;
-H = Z<=0;
-H = +H;
-C = C+D+E+F+G+H;
-for j = 1:length(C)
-  if C(j) > 0
-    W = [W;j];
-  end
-end
+C = C+D+E+F;
+
+
+W = find(C);
 
 X = ones(length(X),1)*X;
 Y = ones(length(Y),1)*Y;
-Z = ones(length(Z),1)*Z;
 
-B = sqrt((X-X.').^2+(Y-Y.').^2+(Z-Z.').^2); %a matrix whose (i,j)th entry is the distance between particle i and particle j
+B = sqrt((X-X.').^2+(Y-Y.').^2); %a matrix whose (i,j)th entry is the distance between particle i and particle j
 B = B<rad;
 A = [];
 for j = 1:size(B,2)
@@ -145,7 +137,7 @@ for j = 1:size(B,2)
 end
 end
 
-function [X,Y,Z] = billiards3(w,l,h,M,vx,vy,vz,X0,Y0,Z0,T,rad,tstep)
+function [X,Y] = billiards3(w,l,h,M,vx,vy,vz,X0,Y0,T,rad,tstep)
 %simulates billiards with elastic collisions on a w x l billiards table.  M
 %should be a vector recording the (positive) masses of the billiard balls
 %(the function will create as many balls as the length of M).  vx, vy, X0,
@@ -157,90 +149,62 @@ function [X,Y,Z] = billiards3(w,l,h,M,vx,vy,vz,X0,Y0,Z0,T,rad,tstep)
 
 X = zeros(floor(T/tstep),length(M)); %initialize the three position arrays, one column per particle
 Y = zeros(floor(T/tstep),length(M));
-Z = zeros(floor(T/tstep),length(M));
 
 X(1,:) = X0; %set initial position
 Y(1,:) = Y0;
-Z(1,:) = Z0;
 
-for k = 2:floor(T/tstep)
+k = 2;
+while any(abs(vx) > 0.001 | abs(vy) > 0.001)
   vx = vx.*0.995;
   vy = vy.*0.995;
   
   tryxpos = X(k-1,:)+tstep*vx; %here we check if any collisions will happen in the next step
   tryypos = Y(k-1,:)+tstep*vy;
-  tryzpos = Z(k-1,:)+tstep*vz;
   
-  [A,W] = collisions3(tryxpos,tryypos,tryzpos,rad,w,l,h);
+  [A,W] = collisions3(tryxpos,tryypos,rad,w,l);
   for j = 1:size(A,1)
-%     x1 = X(A(j,1));
-%     y1 = Y(A(j,1));
-%     x2 = X(A(j,2));
-%     y2 = Y(A(j,2));
-%     v1x = vx(A(j,1));
-%     v1y = vy(A(j,1));
-%     v2x = vx(A(j,2));
-%     v2y = vy(A(j,2));
-%     [v1x v1y v2x v2y] = collide2(x1, y1, x2, y2, v1x, v1y, v2x, v2y);
-%     vx(A(j,1)) = v1x;
-%     vx(A(j,2)) = v2x;
-%     vy(A(j,1)) = v1y;
-%     vy(A(j,2)) = v2y;
+    %     x1 = X(A(j,1));
+    %     y1 = Y(A(j,1));
+    %     x2 = X(A(j,2));
+    %     y2 = Y(A(j,2));
+    %     v1x = vx(A(j,1));
+    %     v1y = vy(A(j,1));
+    %     v2x = vx(A(j,2));
+    %     v2y = vy(A(j,2));
+    %     [v1x v1y v2x v2y] = collide2(x1, y1, x2, y2, v1x, v1y, v2x, v2y);
+    %     vx(A(j,1)) = v1x;
+    %     vx(A(j,2)) = v2x;
+    %     vy(A(j,1)) = v1y;
+    %     vy(A(j,2)) = v2y;
     
     [vx(A(j,1)),vx(A(j,2))] = collide3(M(A(j,1)),M(A(j,2)),vx(A(j,1)),vx(A(j,2))); %avoiding collisions with particles
     [vy(A(j,1)),vy(A(j,2))] = collide3(M(A(j,1)),M(A(j,2)),vy(A(j,1)),vy(A(j,2)));
-    [vz(A(j,1)),vz(A(j,2))] = collide3(M(A(j,1)),M(A(j,2)),vz(A(j,1)),vz(A(j,2)));
   end
   
   %noise in wall collisions
   noise = rand(1);
   
-  for j = 1:length(W)
-    if tryxpos(W(j)) >= w || tryxpos(W(j))<=0 %avoiding collisions with walls
-      vx(W(j)) = -vx(W(j)) + noise;
-    elseif tryypos(W(j))>=l || tryypos(W(j))<=0
-      vy(W(j)) = -vy(W(j)) + noise;
-    elseif tryzpos(W(j)) >=h || tryzpos(W(j))<=0
-      vz(W(j)) = -vz(W(j)) + noise;
-    end
+  %   for j = 1:length(W)
+  %     if tryxpos(W(j)) >= w || tryxpos(W(j))<=0 %avoiding collisions with walls
+  %       vx(W(j)) = -vx(W(j)) + noise;
+  %     elseif tryypos(W(j))>=l || tryypos(W(j))<=0
+  %       vy(W(j)) = -vy(W(j)) + noise;
+  %     elseif tryzpos(W(j)) >=h || tryzpos(W(j))<=0
+  %       vz(W(j)) = -vz(W(j)) + noise;
+  %     end
+  %   end
+  %
+  if ~isempty(W)
+    vx(W) = 0;
+    vy(W) = 0;
   end
+  
+  
   X(k,:) = X(k-1,:)+tstep*vx;%updating the position with the “fixed” velocity vectors
   Y(k,:) = Y(k-1,:)+tstep*vy;
-  Z(k,:) = Z(k-1,:)+tstep*vz;
+  k= k+1;
 end
+X(k:end,:) = [];
+Y(k:end,:) = [];
+
 end
-
-function billiardplayer3(X,Y,Z,ptime,w,l,h,teams)
-%a program for visualizing billiard movement in 3 dimensions.
-
-
-%maxwindow
-
-%for each time step
-for j = 2:size(X,1)
-  
-  if ~isempty(teams)
-    
-  else
-  end
-  %color the first particle red
-  %plot3(X(j,1),Y(j,1),Z(j,1),'ro','MarkerFaceColor','r')
-  scatter(X(j,1),Y(j,1),5^2*pi)
-  
-  %view(2)
-  hold on
-  %keep the rest of the particles blue circles
-  %plot3(X(j,2:size(X,2)),Y(j,2:size(Y,2)),Z(j,2:size(Z,2)),'o')
-  %view(2)
-  scatter(X(j,2:size(X,2)),Y(j,2:size(Y,2)),5^2*pi)
-  hold off
-  axis([0 w 0 l 0 h])
-  grid on
-  pause(ptime)
-end
-hold on
-%draw the path of the first particle
-%plot3(X(:,1),Y(:,1),Z(:,1),'k','LineSmoothing','on')
-%view(2)
-end
-

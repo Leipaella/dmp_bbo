@@ -290,6 +290,7 @@ hold on
         [v1,v2] = find(vz);
         V3 = [v1,v2];
         
+        %if they have collided
         if ~isempty(V3(v1~=v2))
           bz = (sort(V3(v1~=v2,:),2));
           M(unique(bz)) = 1;
