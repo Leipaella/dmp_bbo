@@ -1,9 +1,10 @@
 function [task_solver] = task_arm_path_solver(y0,evaluation_external_program,g)
-task_solver.name = 'task_arm_path_solver';
+task_solver.name = 'task_arm_path';
 
 %if goal is given, save it, otherwise we will assume that the goal is the
 %last 6 parameters being optimized.
 task_solver.g = [];
+task_solver.old_task_id = 0;
 if (nargin>2), task_solver.g = g; end
 
 if (evaluation_external_program)
@@ -12,7 +13,7 @@ else
   task_solver.perform_rollouts = @perform_rollouts_viapoint_solver_dmp;
 end
 
-task_solver.plot_rollouts = @plot_rollouts_viapoint_solver_dmp;
+%task_solver.plot_rollouts = @plot_rollouts_viapoint_solver_dmp;
 
 % Initial state
 task_solver.y0 = y0;
@@ -23,10 +24,10 @@ task_solver.dt = 1/50;
 task_solver.time_exec = 1.2;
 task_solver.timesteps = ceil(1+task_solver.time_exec/task_solver.dt); % Number of time steps
 
-task_solver.order=2; % Order of the dynamic movement primitive
+%task_solver.order=2; % Order of the dynamic movement primitive
 % Next values optimized for minimizing acceleration in separate learning session
 %task.theta_init = [37.0458   -4.2715   27.0579   13.6385; 37.0458   -4.2715   27.0579   13.6385];
-task_solver.theta_init = zeros(2,2);
+%task_solver.theta_init = zeros(2,2);
 
 %addpath dynamicmovementprimitive/
 
@@ -90,22 +91,46 @@ task_solver.theta_init = zeros(2,2);
       if ~isempty(task_solver.g)
         trajectories(k) = dmpintegrate(task_solver.y0,task_solver.g,theta,task_solver.time,task_solver.dt,task_solver.time_exec);
       else
-        trajectories(k) = dmpintegrate(task_solver.y0,task_solver.g,theta,task_solver.time,task_solver.dt,task_solver.time_exec);
+        theta2 = theta(1:end-6,:);
+        goal = theta(end-5:end,1)';
+        %add noise
+        noise = (rand([1 6]) - 0.5).*[0.005 0.005 0.005 2*pi/180 2*pi/180 2*pi/180];
+        %goal = goal + noise;
+        trajectories(k) = dmpintegrate(task_solver.y0,goal,theta2,task_solver.time,task_solver.dt,task_solver.time_exec);
       end
     end
     
     %we need to write the path data to a path file
-    return_dir = cd;
+    return_dir = cd();
     directory = 'C:\Program Files (x86)\V-REP3\V-REP_PRO_EDU';
     cd(directory);
-    csvwrite('trajectory.csv',trajectories.y);
+    
+    
+    settleT = 30;
+    %tack on additions
+    traj = trajectories.y;
+    traj = [traj zeros(size(traj,1),1)]; %add column for gripper
+    settle1 = repmat(traj(end,:),settleT,1);
+    close_gripper = repmat(traj(end,:),50,1);%close gripper, giving it 10 time steps to close
+    close_gripper(:,end) = 1;
+    lift = repmat(traj(end,:),30,1);%lift up in the z direction by 0.2
+    lift(:,3) = linspace(lift(1,3),lift(1,3)+0.2,size(lift,1));
+    settle2 = repmat(lift(end,:),settleT,1); %let settle to final position
+    
+    traj = cat(1,traj,settle1,close_gripper,lift,settle2);
+    %avoid self collisions by limiting beta to be less than pi/2
+    traj(traj(:,5)>(pi/2-pi/180),5) = pi/2 - pi/180;
+    
+    csvwrite('trajectory.csv',traj);
     %cd(return_dir);
     %find task filename
-    switch task.id
-      case 1, filename = 'task1.ttt';
-      case 2, filename = 'task2.ttt';
-      otherwise, disp('Task id not recognized');
-    end
+%     switch task.id
+%       case 1, filename = 'task1.ttt';
+%       case 2, filename = 'task2.ttt';
+%       otherwise, disp('Task id not recognized');
+%     end
+    
+    filename = task.filename;
     
     if exist('cost_vars.csv','file')
       delete('cost_vars.csv');
@@ -117,7 +142,12 @@ task_solver.theta_init = zeros(2,2);
     if (clientID > -1)
       disp('Connected to remote API server');
       %load the applicable file
-      res2 = vrep.simxLoadScene('task.ttt',false,vrep.simx_opmode_oneshot_wait);
+      %only load file if the current task is different from the last task
+      if task.id ~= task_solver.old_task_id
+        res2 = vrep.simxLoadScene(filename,false,vrep.simx_opmode_oneshot_wait);
+      else
+          res2 = vrep.simx_error_noerror;
+      end
       if res2==vrep.simx_error_noerror
         fprintf('Loaded the file %s\n',filename);
         %run the simulation
@@ -133,13 +163,22 @@ task_solver.theta_init = zeros(2,2);
         fprintf('.');
       end
       
-      
       vrep.simxStopSimulation(vrep.simx_opmode_oneshot);
+      pause(1);
+      %vrep.simxCloseScene(vrep.simx_opmode_oneshot_wait);
       vrep.simxFinish();
     end
     vrep.delete(); 
     cost_vars = csvread('cost_vars.csv');
     cd(return_dir);
+    cd('C:\Users\Francois\Documents\Laura\2013\task_splitting_laura\dmp_bbo\rollouts');
+    if ~exist(task_solver.name,'dir'), mkdir(task_solver.name); end
+    cd(task_solver.name);
+    files = dir('traj*');
+    n_files = length(files);
+    csvwrite(sprintf('trajectory%04d.csv',n_files+1),traj);
+    csvwrite(sprintf('costvars%04d.csv',n_files+1),cost_vars);
+    
   end
 
 

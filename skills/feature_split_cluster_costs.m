@@ -101,14 +101,32 @@ for i_feature = 1:n_features
   
   else
     %allow up to 3 clusters (for intervals)
+    inter_dist = [];
     for n_clusters = 1:3
       [idx, C, sumd] = kmeans(c,n_clusters,'emptyaction','singleton');
-      dist(n_clusters) = sum(sumd);
+      intra_dist(n_clusters) = sum(sumd);
+      gaussians{n_clusters} = gmdistribution.fit(c,n_clusters,'Regularize',0.0001);
+      AIC(n_clusters) = gaussians{n_clusters}.AIC;
+      if n_clusters>1
+        ind = combntns(1:n_clusters,2);
+        inter_dist(end+1) = min(sqrt(sum(C(ind).^2,2)));
+      else
+        inter_dist(end+1) = 1;
+      end
     end
     
-    %find the best cluster using F-tests... not implemented yet
-    [~,k] = min(dist);
+    %find the best number of clusters using the ratio of intra-cluster
+    %distances and inter-cluster distances, discussed here:
+    % http://www.csse.monash.edu.au/~roset/papers/cal99.pdf
+    
+    validity = intra_dist./inter_dist;
+    
+    [~,k] = min(validity);
+    
+    [~,gmdk] = min(AIC);
+    
     [idx, C, sumd] = kmeans(c,k,'emptyaction','singleton');
+    idx = gaussians{gmdk}.cluster(c);
     color = ['r';'b';'k'];
     tree = classregtree(f,idx,'method','classification','minparent',ceil(n_samples/10));
     %prune it so as not to overfit the data in a way that won't be visible
@@ -171,10 +189,21 @@ end
 
 [pmin imin] = min(p_arr);
 
+%see if the split values are in between min and max feature values
 if pmin < p_thresh
+  disp('SPLITTING!!');
+end
+
+in_range = any(split_val{imin} > min(percepts(:,imin)) & split_val{imin} < max(percepts(:,imin)));
+
+
+
+if pmin < p_thresh && in_range
+  
   split_decision = true;
   split_feature = imin;
   split_value = split_val{imin};
+  
 else
   split_decision = false;
   split_feature = 0;

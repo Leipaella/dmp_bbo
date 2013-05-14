@@ -20,13 +20,14 @@ if (nargin<3)
 end
 
 n_dofs = length(distributions);
-n_dims  = length(distributions(1).mean);
+%n_dims  = length(distributions(1).mean);
 
 
 %-------------------------------------------------------------------------------
 % Sample from new distribution
-samples = zeros(n_dofs,n_samples,n_dims);
+%samples = zeros(n_dofs,n_samples,n_dims);
 for i_dof=1:n_dofs %#ok<FXUP>
+  n_dims = length(distributions(i_dof).mean);
   mu = distributions(i_dof).mean;
   covar = distributions(i_dof).covar;
     

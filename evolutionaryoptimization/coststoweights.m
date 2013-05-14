@@ -52,7 +52,7 @@ weights = weights/sum(weights);
 
 
   function [weights] = testcoststoweights
-    costs = 0:20;
+    costs = (0:20)+10;
     weighting_method_labels = {'CEM (K_e=','CMAES (K_e=','PI^2 (h='};
     legend_labels = {};
     figure(1)

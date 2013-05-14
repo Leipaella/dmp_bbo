@@ -34,7 +34,7 @@ classdef Skill
     end
    
     
-    function obj = solve_task_instance(obj,task_instance, task_solver, percept)
+    function obj = solve_task_instance(obj,task_instance, task_solver, percept, goal_learning)
       % Adds task_instance to the task_instance_buffer (useful when
       % executing in batch mode)
 
@@ -44,6 +44,8 @@ classdef Skill
       %     - Determine cost, using task, given relevant variables recorded
       %     - put results in rollout_buffer
       %     - put results in previous experience
+      
+      if nargin < 5, goal_learning = 0; end
       
       K=obj.K;
       plot_me = 0;
@@ -62,6 +64,11 @@ classdef Skill
         else
             samples = mvnrnd(obj.distributions.mean, obj.distributions.covar, 1);
         end
+        
+%         if goal_learning
+%           task_solver.g = [samples(3,1,1) samples(4,1,1)];
+%         end
+        
         %execute skill, record relevant cost variables
         cost_vars = task_solver.perform_rollouts(task_instance,samples);
         
@@ -79,12 +86,21 @@ classdef Skill
           %reshape the rollouts to work nicely with the
           %update_distributions function
           for ii = 1:length(obj.rollout_buffer)
-            s(:,ii,:) = squeeze(obj.rollout_buffer{ii}.dmp_parameters_sample)';
+            s(:,ii,:) = squeeze(obj.rollout_buffer{ii}.dmp_parameters_sample);
             c(ii,:) = obj.rollout_buffer{ii}.cost;
           end
           
+          %update parameters
+          update_parameters.weighting_method    = 'CMA-ES';
+          update_parameters.eliteness           = floor(K/2);
+          update_parameters.covar_update        = 'PI-BB';
+          update_parameters.covar_full          =       0;
+          update_parameters.covar_learning_rate =       1;
+          update_parameters.covar_bounds        =      [];
+          update_parameters.covar_scales        =       1;
+
           %update the distributions
-          [obj.distributions summary] = update_distributions(obj.distributions,s,c);
+          [obj.distributions summary] = update_distributions(obj.distributions,s,c,update_parameters);
           
           %add to learning history to make a nice plot
           if isempty(obj.learning_history)
@@ -122,7 +138,7 @@ classdef Skill
              percepts(ii,:) = obj.previous_experience(end - obj.K + ii).percept;
              costs(ii,:) = obj.previous_experience(end - obj.K + ii).cost;
            end
-           [split_decision split_feature split_value] = feature_split_cluster_costs(percepts,costs,0.09);
+           %[split_decision split_feature split_value] = feature_split_cluster_costs(percepts,costs,0.09);
            %[split_decision split_feature split_value] = feature_split_sliding(percepts,costs,0.09,fig);
            
            split_decision = false;
@@ -196,8 +212,8 @@ classdef Skill
           if (isfield(task_solver,'plot_rollouts'))
             %figure(obj.idx*obj.n_figs + 1)
             %subplot(plot_n_dofs,4,1:4:plot_n_dofs*4)
-            %task_solver.plot_rollouts(gca,task_instance,cost_vars)
-            %title('Visualization of roll-outs')
+            task_solver.plot_rollouts(gca,task_instance,cost_vars)
+            title('Visualization of roll-outs')
           end
           if(plot_me && 0)
             % Plot learning histories

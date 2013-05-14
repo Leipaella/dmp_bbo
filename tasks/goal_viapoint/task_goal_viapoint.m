@@ -1,4 +1,4 @@
-function [task] = task_viapoint(viapoint,viapoint_time_ratio,goal)
+function [task] = task_goal_viapoint(viapoint,viapoint_time_ratio,goal)
 if (nargin<1), viapoint  = [0.4 0.7]; end
 if (nargin<2), viapoint_time_ratio = 0.5; end
 

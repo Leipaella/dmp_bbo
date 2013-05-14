@@ -4,12 +4,15 @@ fh = figure(10);
 n_skills_disp = 4;
 goal_learning = 1;
 n_samples_per_update = 15;
-n_updates = 5;
+n_updates = 10;
+
+count = 0;
 
 g_init = [0.14 0 -0.45 0 pi/2 0]; %task 1
 %g_init = [0.15 0 -0.54 pi 0 pi/2]; %task 2
 g_covar_init = ones(length(g_init),1)*0.02^2;
 g_covar_init(2) = 0.0001^2; %we know this will be zero, so just saving time.
+g_covar_init(3) = 0.1^2;
 if goal_learning
   n_dofs = 12; %DMP working in 6-D space, and x,y,z,alpha,beta,gamma of the goal
 else
@@ -69,8 +72,9 @@ end
 
 i_update = 0;
 
+wh = waitbar(0,'Running Simulations');
+
 while i_update < n_updates
-  
 
   %--------------------------------------------------------------------------
   % Generate a task and percept
@@ -81,6 +85,8 @@ while i_update < n_updates
   
   for i_instance = 1:n_samples_per_update
   
+        
+      waitbar(count/(n_samples_per_update*n_updates),wh);
       task = tasks(r(i_instance));
       percept = percepts(r(i_instance),:);
 
@@ -130,12 +136,18 @@ while i_update < n_updates
             h_covar = error_ellipse(real(squeeze(covar(1:plot_n_dim,1:plot_n_dim))),theta(1:plot_n_dim));
             set(h_covar,'Color',0.8*ones(1,3),'LineWidth',1);
           end
-          covar = c_skill.distributions.covar;
-          theta = c_skill.distributions.mean;
+          %want to see the x-z plane, since that's the most interesting.
+          covar = diag([c_skill.distributions(7).covar c_skill.distributions(9).covar]);
+          theta = [c_skill.distributions(7).mean c_skill.distributions(9).mean];
+          %covar = c_skill.distributions.covar;
+          %theta = c_skill.distributions.mean;
+          plot_n_dim = 2;
           h_covar = error_ellipse(real(squeeze(covar(1:plot_n_dim,1:plot_n_dim))),theta(1:plot_n_dim));
           set(h_covar,'Color',[1 0 0],'LineWidth',1);
-          skill_list(ii).history(end+1).theta = theta;
-          skill_list(ii).history(end).covar = covar;
+          xlabel('Goal x-coordinate');
+          ylabel('Goal y-coordinate');
+          skill_list(ii).history(end+1).theta = c_skill.distributions.mean;
+          skill_list(ii).history(end).covar = c_skill.distributions.covar;
           drawnow;
 
         end
@@ -252,7 +264,7 @@ while i_update < n_updates
   i_update = i_update + 1;
 end
 
-
+close(wh);
 
 timestr = datestr(clock);
 timestr(timestr == ' ') = '_';

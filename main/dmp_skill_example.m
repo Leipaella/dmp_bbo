@@ -20,7 +20,7 @@ covar_init = 5*eye(size(task_solver.theta_init,2));
 
 
 % Number of updates, roll-outs per update
-n_updates =  50;
+n_updates =  200;
 n_samples =  15;
 
 % Weighting method, and covariance update method

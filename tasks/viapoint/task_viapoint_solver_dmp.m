@@ -28,7 +28,7 @@ task_solver.order=2; % Order of the dynamic movement primitive
 %task.theta_init = [37.0458   -4.2715   27.0579   13.6385; 37.0458   -4.2715   27.0579   13.6385];
 task_solver.theta_init = zeros(2,2);
 
-addpath dynamicmovementprimitive/
+%addpath dynamicmovementprimitive/
 
   function plot_rollouts_viapoint_solver_dmp(axes_handle,task,cost_vars)
     cla(axes_handle)

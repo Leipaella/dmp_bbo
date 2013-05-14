@@ -72,9 +72,9 @@ task_solver.theta_init = zeros(task_solver.order,length(task_solver.g));
       theta = squeeze(thetas(:,k,:));
       
       if goal_learning
-        theta = theta(1:end-2,:);
+        theta2 = theta(1:end-2,:);
         goal = theta(end-1:end,:);
-        trajectory = dmpintegrate(task_solver.y0,goal,theta,task_solver.time,task_solver.dt,task_solver.time_exec);
+        trajectory = dmpintegrate(task_solver.y0,goal,theta2,task_solver.time,task_solver.dt,task_solver.time_exec);
       
       else
       trajectory = dmpintegrate(task_solver.y0,task_solver.g,theta,task_solver.time,task_solver.dt,task_solver.time_exec);

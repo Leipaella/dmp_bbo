@@ -53,7 +53,7 @@ n_samples = size(samples,2);
 % First column contains total costs
 total_costs = costs(:,1);
 
-
+disp(update_parameters.weighting_method);
 %-------------------------------------------------------------------------------
 % First, map the costs to the weights
 if (strcmp(update_parameters.weighting_method,'PI-BB'))
@@ -72,6 +72,7 @@ elseif (strcmp(update_parameters.weighting_method,'CEM') || strcmp(update_parame
     for ii=1:mu
       weights(indices(ii)) = log(mu+1/2)-log(ii);
     end
+    disp(weights)
   end
 
 else
@@ -91,7 +92,12 @@ weights = weights/sum(weights);
 distributions_new = distributions;
 for i_dof=1:n_dofs
   % Update with reward-weighed averaging
-  distributions_new(i_dof).mean = sum(repmat(weights,1,n_dims).*squeeze(samples(i_dof,:,:)),1);
+  n_dims = length(distributions(i_dof).mean);
+  samps = squeeze(samples(i_dof,:,1:n_dims));
+  if size(samps,1) == 1
+      samps = shiftdim(samps,1);
+  end
+  distributions_new(i_dof).mean = sum(repmat(weights,1,n_dims).*samps,1);
 end
 
 %-------------------------------------------------------------------------------
@@ -111,7 +117,10 @@ for i_dof=1:n_dofs
       mu = distributions_new(i_dof).mean;
     end
     
-    eps = squeeze(samples(i_dof,:,:)) - repmat(mu,n_samples,1);
+    n_dims = length(mu);
+    temp = squeeze(samples(i_dof,:,:));
+    temp = temp(:,1:n_dims);
+    eps = temp - repmat(mu,n_samples,1);
     covar_new = (repmat(weights,1,n_dims).*eps)'*eps;
     if (~update_parameters.covar_full)
       % Only use diagonal
