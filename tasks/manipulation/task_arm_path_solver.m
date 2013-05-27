@@ -13,6 +13,11 @@ else
   task_solver.perform_rollouts = @perform_rollouts_viapoint_solver_dmp;
 end
 
+%initiallize the connection to vrep
+task_solver.vrep=remApi('remoteApi','extApi.h');
+task_solver.clientID = task_solver.vrep.simxStart('127.0.0.1',19999,true,true,5000);
+    
+
 %task_solver.plot_rollouts = @plot_rollouts_viapoint_solver_dmp;
 
 % Initial state
@@ -23,7 +28,7 @@ task_solver.time = 1;
 task_solver.dt = 1/50;
 task_solver.time_exec = 1.2;
 task_solver.timesteps = ceil(1+task_solver.time_exec/task_solver.dt); % Number of time steps
-
+task_solver.close_sim = @close_vrep;
 %task_solver.order=2; % Order of the dynamic movement primitive
 % Next values optimized for minimizing acceleration in separate learning session
 %task.theta_init = [37.0458   -4.2715   27.0579   13.6385; 37.0458   -4.2715   27.0579   13.6385];
@@ -137,8 +142,10 @@ task_solver.timesteps = ceil(1+task_solver.time_exec/task_solver.dt); % Number o
     end
     
     % Run external program here
-    vrep=remApi('remoteApi','extApi.h');
-    clientID = vrep.simxStart('127.0.0.1',19999,true,true,5000);
+    %vrep=remApi('remoteApi','extApi.h');
+    %clientID = vrep.simxStart('127.0.0.1',19999,true,true,5000);
+    vrep = task_solver.vrep;
+    clientID = task_solver.clientID;
     if (clientID > -1)
       disp('Connected to remote API server');
       %load the applicable file
@@ -164,11 +171,9 @@ task_solver.timesteps = ceil(1+task_solver.time_exec/task_solver.dt); % Number o
       end
       
       vrep.simxStopSimulation(vrep.simx_opmode_oneshot);
-      pause(1);
       %vrep.simxCloseScene(vrep.simx_opmode_oneshot_wait);
-      vrep.simxFinish();
     end
-    vrep.delete(); 
+    pause(0.5);
     cost_vars = csvread('cost_vars.csv');
     cd(return_dir);
     cd('C:\Users\Francois\Documents\Laura\2013\task_splitting_laura\dmp_bbo\rollouts');
@@ -180,6 +185,12 @@ task_solver.timesteps = ceil(1+task_solver.time_exec/task_solver.dt); % Number o
     csvwrite(sprintf('costvars%04d.csv',n_files+1),cost_vars);
     
   end
+
+    function close_vrep
+       task_solver.vrep.simxFinish();
+       task_solver.vrep.delete();  
+    end
+
 
 
 end

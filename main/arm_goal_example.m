@@ -23,7 +23,7 @@ n_dims = 3; %number of basis functions
 
 
 
-p_thresh = 0.15;
+p_thresh = 0.5;
 
 %Set the initial weights for the DMPs
 distributions = [];
@@ -58,7 +58,8 @@ skill_list(1).history = [];
 
 %[tasks percepts n_tasks] = generate_shape_tasks;
 %[tasks percepts n_tasks] = generate_height_tasks;
-[tasks percepts n_tasks] = generate_single_task;
+%[tasks percepts n_tasks] = generate_single_task;
+[tasks percepts n_tasks] = generate_two_tasks;
 
 disp_n_skills = 4;
 
@@ -129,10 +130,11 @@ while i_update < n_updates
           subplot(rows,cols,t(:));
           hold on;
           %n_dims  = length(c_skill.distributions.mean);
-          plot_n_dim = min(n_dims,3);
+          plot_n_dim = min(n_dims,2);
           for hist = 1:length(skill_list(ii).history)
             theta = skill_list(ii).history(hist).theta;
             covar = skill_list(ii).history(hist).covar;
+            plot_n_dim = 2;
             h_covar = error_ellipse(real(squeeze(covar(1:plot_n_dim,1:plot_n_dim))),theta(1:plot_n_dim));
             set(h_covar,'Color',0.8*ones(1,3),'LineWidth',1);
           end
@@ -146,8 +148,8 @@ while i_update < n_updates
           set(h_covar,'Color',[1 0 0],'LineWidth',1);
           xlabel('Goal x-coordinate');
           ylabel('Goal y-coordinate');
-          skill_list(ii).history(end+1).theta = c_skill.distributions.mean;
-          skill_list(ii).history(end).covar = c_skill.distributions.covar;
+          skill_list(ii).history(end+1).theta = theta;
+          skill_list(ii).history(end).covar = covar;
           drawnow;
 
         end
@@ -265,7 +267,7 @@ while i_update < n_updates
 end
 
 close(wh);
-
+task_solver.close_sim();
 timestr = datestr(clock);
 timestr(timestr == ' ') = '_';
 timestr(timestr == ':') = '-';
