@@ -152,6 +152,7 @@ task_solver.close_sim = @close_vrep;
       %only load file if the current task is different from the last task
       if task.id ~= task_solver.old_task_id
         res2 = vrep.simxLoadScene(filename,false,vrep.simx_opmode_oneshot_wait);
+        task_solver.old_task_id = task.id;
       else
           res2 = vrep.simx_error_noerror;
       end
@@ -176,7 +177,7 @@ task_solver.close_sim = @close_vrep;
     pause(0.5);
     cost_vars = csvread('cost_vars.csv');
     cd(return_dir);
-    cd('C:\Users\Francois\Documents\Laura\2013\task_splitting_laura\dmp_bbo\rollouts');
+    cd('C:\Users\laura\dmp\dmp_bbo\rollouts');
     if ~exist(task_solver.name,'dir'), mkdir(task_solver.name); end
     cd(task_solver.name);
     files = dir('traj*');

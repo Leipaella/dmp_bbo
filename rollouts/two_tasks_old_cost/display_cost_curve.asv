@@ -1,0 +1,13 @@
+function display_cost_curve(skill_list)
+
+figure
+for i_skill = 1:numel(skill_list)
+    hold on
+    skill = skill_list(i_skill);
+    for i_update = 1:numel(skill.learning_history)
+        history = 
+    end
+    
+end
+
+end

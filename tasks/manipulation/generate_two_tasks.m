@@ -12,7 +12,7 @@ percepts(1,:) = 0;
 
 task = task_arm_path();
 task.id = 2;
-task.filename = 'short_square_rod.ttt';
+task.filename = 'laying_down_square_rod.ttt';
 tasks(2) = task;
 percepts(2,:) = 1;
 

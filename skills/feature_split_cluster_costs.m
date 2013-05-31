@@ -121,9 +121,9 @@ for i_feature = 1:n_features
     
     validity = intra_dist./inter_dist;
     
-    [~,k] = min(validity);
+    [temp,k] = min(validity);
     
-    [~,gmdk] = min(AIC);
+    [temp,gmdk] = min(AIC);
     
     [idx, C, sumd] = kmeans(c,k,'emptyaction','singleton');
     idx = gaussians{gmdk}.cluster(c);

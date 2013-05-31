@@ -6,7 +6,11 @@ disp(strcat('Split based on feature ', num2str(split_feature)));
 parent = skill_entry.skill;
 %make a new skill with the same distribution
 subskill1 = Skill(strcat(parent.name,'_sub1'),parent.distributions);
+subskill1.learning_history = parent.learning_history;
+subskill1.n_figs = parent.n_figs;
 subskill2 = Skill(strcat(parent.name,'_sub2'),parent.distributions);
+subskill2.learning_history = parent.learning_history;
+subskill2.n_figs = parent.n_figs;
 
 %create the two conditions
 cond1 = {};
