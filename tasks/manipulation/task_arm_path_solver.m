@@ -111,7 +111,8 @@ task_solver.close_sim = @close_vrep;
     cd(directory);
     
     
-    settleT = 30;
+    settleT = 100;
+    settleT2 = 30;
     %tack on additions
     traj = trajectories.y;
     traj = [traj zeros(size(traj,1),1)]; %add column for gripper
@@ -120,7 +121,7 @@ task_solver.close_sim = @close_vrep;
     close_gripper(:,end) = 1;
     lift = repmat(traj(end,:),30,1);%lift up in the z direction by 0.2
     lift(:,3) = linspace(lift(1,3),lift(1,3)+0.2,size(lift,1));
-    settle2 = repmat(lift(end,:),settleT,1); %let settle to final position
+    settle2 = repmat(lift(end,:),settleT2,1); %let settle to final position
     
     traj = cat(1,traj,settle1,close_gripper,lift,settle2);
     %avoid self collisions by limiting beta to be less than pi/2

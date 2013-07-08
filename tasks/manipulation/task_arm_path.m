@@ -54,14 +54,14 @@ task.cost_function= @cost_function_arm_path;
     %based on the distance only. If the objecct is lifted, the secondary cost is
     %based on the change in orientation.
     costs = lift*0.75;
-    if lift > 0.1
+    if lift < 0.1
         costs = costs + orientation*0.25;
     else
         costs = costs + distance_to_obj*0.25;
     end
     
     
-    if self_coll
+    if environ_coll
       costs = 1;
     end
     
