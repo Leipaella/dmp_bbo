@@ -4,7 +4,7 @@ task_solver.name = 'task_arm_path';
 %if goal is given, save it, otherwise we will assume that the goal is the
 %last 6 parameters being optimized.
 task_solver.g = [];
-task_solver.old_task_id = 0;
+task_solver.old_task_id = -1;
 if (nargin>2), task_solver.g = g; end
 
 if (evaluation_external_program)
