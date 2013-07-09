@@ -25,6 +25,7 @@
 \newcommand{\taskpsp}{Q}
 \newcommand{\featv}{\mathbf{f}}
 \newcommand{\argmin}[1]{\underset{#1}{\operatorname{arg}\,\operatorname{min}}\;}
+\newcommand{\covar}{\bm{\Sigma}}
 
 \begin{document}
 
@@ -66,26 +67,70 @@ The goal of this work is to start in a situation where we don't know that the fu
 
 The experiments that were performed applied stochastic optimization and a perceptual de-aliasing technique to manipulation. The different tasks were different objects that were to be lifted by a robot arm with a simple two finger gripper. The stochastic optimization algorithm and perceptual de-aliasing techniques will be discussed in further detail in the methods section.
 
-\subsection{Formalization}
+
+\section{Foundations and Related Work}
+%policy
 
 \begin{align}
-\actsp &\in \mathbb{R}^N & \mbox{Action space}\\
+\label{eq:policy}\pi(a|s,\act) &\equiv  \pi_{\act}(a|s) & \act \in \actsp \\
+\actsp &\in \mathbb{R}^N & \mbox{Action space}
+\end{align}
+
+Eq \ref{eq:policy} defines a policy which maps states to actions and is parameterized by $\act$. The action space is the parameters needed to complete the action. It can be the goal position, or the weights of a Dynamic Movement Primitive (DMP).
+
+\begin{align}
+\costf\mbox{: } &\label{eq:cost} \actsp \times \taskpsp \mapsto \mathbb{R}&\mbox{Cost function}
+\end{align}
+
+\subsection{Stochastic Optimization}
+
+\begin{align}
+\label{eq:opt}\pi(a|s,\act_\mu,\covar)
+\end{align}
+
+When the parameter $\act$ in Eq. \ref{eq:policy} is unknown or needs to be optimized, it can be represented instead using a mean and variance matrix to give a normal distribution for the value of $\act$. The policy parameter vector is then chosen from a normal distribution with the mean $\act_\mu$ and the variance $\Sigma$ shown in Eq. \ref{eq:opt}.
+
+\color{red}Explain stochastic optimization here \color{black}
+
+
+\subsection{Parameterized Policies}
+
+There arise many situations where the  policy parameter vector $\act$ is dependent on the context. The context is the set of relevant task parameters $\taskp$ which have an influence on the values of the policy parameters. Task parameters, \emph{\taskpsp}, define a task. In the case of application to manipulation, these parameters could be the position and orientation of the object, the object's geometry, the object's color, and any number of other defining properties. These task parameters are constant in time and do not include any robot properties. 
+
+\begin{align}
+\label{eq:gating}\pi(\act,\taskp)
+\end{align}
+
+ To define the relationship between task parameters and policy parameters, a new policy is needed which will map $\taskp$ to $\act$, called the gating policy (Eq. \ref{eq:gating}). The parameters $\act$ it controls are inputs to the action policy, which controls the actual action being performed. Now there is a two-level system: input task parameters into the gating policy which outputs policy parameters for the action policy, input these policy parameters to the action policy to perform the action. 
+
+
+Parameterized policies use regression techniques to map the relevant task parameter vector $\taskp$ to the chosen policy parameter vector $\act$.
+
+\color{red} Explain Gennaro's work here \color{black}
+
+\subsection{Option Policies}
+
+When there are a discrete number of options for policy parameters, classification is used instead of regression for the gating policy. Daniel ran experiments using this two-level policy structure with the goal of finding multiple action policy solutions to a single task \cite{daniel}. The task parameters used corresponded directly with which option to take. 
+
+
+\section{Perceptual De-aliasing}
+
+\color{red}Combine the use of a gating policy (decision trees) and an action policy that uses stochastic optimization. Get the data from the stochastic optimization updates. Also we use features not q. Cite Piater\color{black}
+
+We don't always have direct excess to the task parameters. Instead, we have access to the detectable features which may or may not be relevant in determining the action policy parameters.  The feature space contains the set of all possible feature vectors that can be seen. Each feature within this vector can be either a real number or one of a discrete set. In the robot example, the features might be the color of the object, in which case its value is one of a discrete set such as \{red, yellow, blue\}, or it could be the color intensity measured by a sensor, in which case it would be a continuous numeric value. The features which are observed are a function of the task parameters \eqref{eq:obs}. The color sensor value would be a function of the object's color, and the visual data would be a function of the object's geometry and orientation with respect to the camera, and so on.
+
+\begin{align}
+\obsm\mbox{: } &\label{eq:obs}\taskpsp \mapsto \featsp& \mbox{Observation model}\\
 \featsp &= \featsp_1 \times \featsp_2 \times ... \times \featsp_N & \mbox{Feature space}\\
 \featsp_i &\in \mathbb{R}, or \featsp_i \in \{C_1,C_2,...,C_N\}&\notag\\
 \featv &\in \featsp, with \featv = <\feat_1,\feat_2,...,\feat_n>&
 \end{align}
 
-The action space is the parameters needed to complete the action. It can be the goal position, or the weights of a Dynamic Movement Primitive (DMP). The feature space contains the set of all possible feature vectors that can be seen. Each feature within this vector can be either a real number or one of a discrete set. In the robot example, the features might be the color of the object, in which case its value is one of a discrete set such as \{red, yellow, blue\}, or it could be the color intensity measured by a sensor, in which case it would be a continuous numeric value.
-
 \begin{align}
-\obsm\mbox{: } &\label{eq:obs}\taskpsp \mapsto \featsp& \mbox{Observation model}\\
-\costf\mbox{: } &\label{eq:cost} \actsp \times \taskpsp \mapsto \mathbb{R}&\mbox{Cost function}\\
-\mbox{Task: } &\featsp \mapsto \actsp& \mbox{Relationship to find}
+\label{eq:fgating}\pi(\act,\feat)
 \end{align}
 
- Task parameters, \emph{\taskpsp}, define a task. In the case of application to manipulation, these parameters could be the position and orientation of the object, the object's geometry, the object's color, and any number of other defining properties. These task parameters are constant in time and do not include any robot properties. The features which are then observed are a function of these task parameters \eqref{eq:obs}. The color sensor value would be a function of the object's color, and the visual data would be a function of the object's geometry and orientation with respect to the camera, and so on. The cost function \emph{J} in \eqref{eq:cost} maps from action space and task parameter space to cost. Both on the context of the task, and on the action that was taken within this context, are important to determining the level of success. The goal is the find a mapping from features to actions.
-
- It is necessary to also define the idea of relevance: what makes a feature or a task parameter relevant? A task parameter is relevant when it can take on different values that will lead to different optimal actions \eqref{eq:relq}. We are assuming that there is a task parameter that independently influences the cost. It is possible that a case could arise where only changing two cost parameters at once causes a different action to be taken, but we are not considering that at this time. 
+It is necessary to define the idea of relevance: what makes a feature or a task parameter relevant? A task parameter is relevant when it can take on different values that will lead to different optimal actions \eqref{eq:relq}. We are assuming that there is a task parameter that independently influences the cost. It is possible that a case could arise where only changing two cost parameters at once causes a different action to be taken, but we are not considering that at this time. 
 
 \begin{align}
 \taskp_i =& <\taskpv_1,\taskpv_2,...,\taskpv_i,...\taskpv_N> \notag & 
@@ -123,14 +168,16 @@ The following description will be given in the context of the simulated robot wh
 
 The robot is given an initial starting motion through imitation learning. Then the robot will choose K sample actions, in which each action parameter is taken from a normal distribution centered around the imitation learning value and with a predefined initial covariance matrix. When the robot is next required to perform a task, it will record the features present, perform a sample action from the distribution, and record the cost that it incurs. Now after each performed task, the robot will accumulate a roll-out which contains the perception, action parameters, and cost. After K tasks have been seen, the sampling distribution and sampling covariance matrix are updated, biased towards the lower cost actions. Now future action will be drawn from this new sampling distribution. 
 
-If there is only one task, the algorithm will proceed in this manner, performing stochastic optimization until the local minimum of the cost is found, presumably towards perfecting the demonstrated action. If there are two tasks being shown, which have similar but different actions that need to be performed then this algorithm by itself will never find the context-specific best actions. Therefore, task splitting needs to be introduced in order to detect the difference between two different tasks. After this distinction is made, the two tasks can be treated separately, each with its own sampling distribution. To implement this idea, after K samples are taken, but before the new distribution is updated, a splitting test is run to determine if there are two different tasks –-- as evidenced by having two different cost functions –-- that are falsely being treated as the same task.
+If there is only one task, the algorithm will proceed in this manner, performing stochastic optimization until the local minimum of the cost is found, presumably towards perfecting the demonstrated action. If there are two tasks being shown, which have similar but different actions that need to be performed then this algorithm by itself will never find the context-specific best actions. Therefore, task splitting needs to be introduced in order to detect the difference between two different tasks. After this distinction is made, the two tasks can be treated separately, each with its own sampling distribution. To implement this idea, after K samples are taken, but before the new distribution is updated, a splitting test is run to determine if there are two different tasks that are falsely being treated as the same task.
 
 \begin{figure}[ht]
   \centering
   \includegraphics[width=0.9\columnwidth]{one_vs_two_tasks.png}
-  \caption{\label{fig_label} One versus two tasks}
+  \caption{One versus two tasks}
   \label{fig:1vs2tasks}
 \end{figure} 
+
+In Figure \ref{fig:1vs2tasks}, the top two plots show the situation where there is only one task, i.e. $\taskpsp_1 = \taskpsp$. The bottom two plots shows the situation where there are two tasks. The blue line shows $\costf(\act,\taskp), \taskp \in \taskpsp_1$
 
 \color{red}Each task has its own cost function. When two tasks are being treated as the same task, some of the samples will be the cost function from one task, and some will be the cost function from the other task. \color{black} When the sampling distribution is at a location where the two cost functions vary, a histogram of the costs will reveal that there are two different clusters. By looking only at the cost distribution, regardless of the action taken, we are assuming that the action taken does not matter. In the case where the covariance matrix for the sampling distribution is small, this serves as a fairly accurate estimation, since all the actions taken in the K samples are very similar. Once the costs are clustered, any supervised learning algorithm can be used to determine which features indicate which cluster. For this work, a classification tree was used. If we had followed in a similar thread as Piater et al., the parallel would have been to determine visual classes by using the covariance matrix. If the covariance matrix remained large, or moved back and forth repeatedly, we could assume this was due to visual class aliasing, but it may also happen by chance, and is dependent on the reinforcement learning algorithm. Instead, by using approximately equivalent actions as if they were the same action, visual classes can be found completely independently of the reinforcement algorithm used. 
 
