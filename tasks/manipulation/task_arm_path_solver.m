@@ -178,7 +178,11 @@ task_solver.close_sim = @close_vrep;
     pause(0.5);
     cost_vars = csvread('cost_vars.csv');
     cd(return_dir);
-    cd('C:\Users\laura\dmp\dmp_bbo\rollouts');
+    if (~isempty(findstr(pwd,'stulp')))
+      cd('~stulp/matlab/dmp_bbo/rollouts');
+    else
+      cd('C:\Users\laura\dmp\dmp_bbo\rollouts');
+    end
     if ~exist(task_solver.name,'dir'), mkdir(task_solver.name); end
     cd(task_solver.name);
     files = dir('traj*');
