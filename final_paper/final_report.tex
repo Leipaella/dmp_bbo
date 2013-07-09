@@ -7,25 +7,30 @@
 \usepackage{amsmath}
 \usepackage{bm}
 
-\title{Online Perceptual De-Aliasing for Local Optimization}
+\title{On-line Option Discovery and De-Aliasing for Direct Policy Search}
 \date{July 4, 2013}
 \author{Laura Vogelaar}
 \titlepic{\includegraphics{cover.png}}
 \makeindex
 
-\newcommand{\actsp}{\Theta}
-\newcommand{\feat}{f}
-\newcommand{\featsp}{\emph{F}}
-\newcommand{\costsp}{R}
-\newcommand{\taskp}{\mathbf{q}}
-\newcommand{\taskpv}{q}
-\newcommand{\costf}{J}
-\newcommand{\obsm}{O}
-\newcommand{\act}{\bm{\theta}}
-\newcommand{\taskpsp}{Q}
-\newcommand{\featv}{\mathbf{f}}
+\newcommand{\polg}   {\ensuremath{\pi^g}}
+\newcommand{\pol}    {\ensuremath{\pi}}
+\newcommand{\act}    {\ensuremath{\mathbf{a}}}
+\newcommand{\sta}    {\ensuremath{\mathbf{s}}}
+\newcommand{\appsp}  {\ensuremath{\Theta}}
+\newcommand{\feat}   {\ensuremath{f}}
+\newcommand{\featsp} {\ensuremath{\emph{F}}}
+\newcommand{\costsp} {\ensuremath{R}}
+\newcommand{\taskp}  {\ensuremath{\mathbf{q}}}
+\newcommand{\taskpv} {\ensuremath{q}}
+\newcommand{\costf}  {\ensuremath{J}}
+\newcommand{\obsm}   {\ensuremath{O}}
+\newcommand{\app}    {\ensuremath{\bm{\theta}}}
+\newcommand{\taskpsp}{\ensuremath{Q}}
+\newcommand{\featv}  {\ensuremath{\mathbf{f}}}
+\newcommand{\covar}  {\ensuremath{\bm{\Sigma}}}
+
 \newcommand{\argmin}[1]{\underset{#1}{\operatorname{arg}\,\operatorname{min}}\;}
-\newcommand{\covar}{\bm{\Sigma}}
 
 \begin{document}
 
@@ -68,49 +73,92 @@ The goal of this work is to start in a situation where we don't know that the fu
 The experiments that were performed applied stochastic optimization and a perceptual de-aliasing technique to manipulation. The different tasks were different objects that were to be lifted by a robot arm with a simple two finger gripper. The stochastic optimization algorithm and perceptual de-aliasing techniques will be discussed in further detail in the methods section.
 
 
-\section{Foundations and Related Work}
+\section{Formalization}
 %policy
 
-\begin{align}
-\label{eq:policy}\pi(a|s,\act) &\equiv  \pi_{\act}(a|s) & \act \in \actsp \\
-\actsp &\in \mathbb{R}^N & \mbox{Action space}
-\end{align}
-
-Eq \ref{eq:policy} defines a policy which maps states to actions and is parameterized by $\act$. The action space is the parameters needed to complete the action. It can be the goal position, or the weights of a Dynamic Movement Primitive (DMP).
+\subsection{Parameterized Policies}
 
 \begin{align}
-\costf\mbox{: } &\label{eq:cost} \actsp \times \taskpsp \mapsto \mathbb{R}&\mbox{Cost function}
+\label{eq:policy}\pi(\act|\sta,\app) &\equiv  \pi_{\app}(\act|\sta) & \app \in \appsp \\
+\appsp &\in \mathbb{R}^N & \mbox{Action space}
 \end{align}
-
-\subsection{Stochastic Optimization}
 
 \begin{align}
-\label{eq:opt}\pi(a|s,\act_\mu,\covar)
+\label{eq:policy}\pi(\act|\sta,\app) &\equiv  \pi_{\app}(\act|\sta) & \app \in \appsp \\
+\appsp &\in \mathbb{R}^N & \mbox{Action space}
 \end{align}
 
-When the parameter $\act$ in Eq. \ref{eq:policy} is unknown or needs to be optimized, it can be represented instead using a mean and variance matrix to give a normal distribution for the value of $\act$. The policy parameter vector is then chosen from a normal distribution with the mean $\act_\mu$ and the variance $\Sigma$ shown in Eq. \ref{eq:opt}.
+Eq \ref{eq:policy} defines a policy which maps states to actions and is parameterized by $\app$. The action space is the parameters needed to complete the action. It can be the goal position, or the weights of a Dynamic Movement Primitive (DMP).
+
+\subsubsection{Policy Improvement through Stochastic Optimization}
+
+\begin{align}
+\costf\mbox{: } &\label{eq:cost} \appsp \mapsto \mathbb{R}&\mbox{Cost function}
+\end{align}
+
+Policy improvement: find \app that minimizes \costf.
+
+Stochastic optimization general method for solving black-box opimization problems. BBO: nothing is known about \costf. One approach: treat policy improvement as BBO, apply stochastic optimization.
+
+When the parameter $\app$ in Eq. \ref{eq:policy} is unknown or needs to be optimized, it can be represented instead using a mean and variance matrix to give a normal distribution for the value of $\app$. The policy parameter vector is then chosen from a normal distribution with the mean $\app_\mu$ and the variance $\covar$ shown in Eq. \ref{eq:opt}.
 
 \color{red}Explain stochastic optimization here \color{black}
 
 
-\subsection{Parameterized Policies}
+\begin{align*}
+\app_{k=1\dots K} & {\sim}\mathcal{N}({\app_\mu},{\covar})\\
+\forall k~J_k & = J(\app_k)\\
+\forall k~P_k & = \mbox{``lower cost} \Rightarrow \mbox{higher weight''}\\
+\app^{new} & = \sum_{k=1}^{K} P_k \app_k\\
+\covar^{new} & = \sum_{k=1}^{K}P_k(\app_k-\app)(\app_k-\app)^\intercal
+\end{align*}
 
-There arise many situations where the  policy parameter vector $\act$ is dependent on the context. The context is the set of relevant task parameters $\taskp$ which have an influence on the values of the policy parameters. Task parameters, \emph{\taskpsp}, define a task. In the case of application to manipulation, these parameters could be the position and orientation of the object, the object's geometry, the object's color, and any number of other defining properties. These task parameters are constant in time and do not include any robot properties. 
+Instead of having the parameters $\app_\mu$ and $\covar$ as parameters of the optimization algorithm, as is customary, these parameters are stored in the policy itself. 
 
 \begin{align}
-\label{eq:gating}\pi(\act,\taskp)
+\label{eq:opt}\pi(\act|\sta,\app_\mu,\covar)
 \end{align}
 
- To define the relationship between task parameters and policy parameters, a new policy is needed which will map $\taskp$ to $\act$, called the gating policy (Eq. \ref{eq:gating}). The parameters $\act$ it controls are inputs to the action policy, which controls the actual action being performed. Now there is a two-level system: input task parameters into the gating policy which outputs policy parameters for the action policy, input these policy parameters to the action policy to perform the action. 
 
 
-Parameterized policies use regression techniques to map the relevant task parameter vector $\taskp$ to the chosen policy parameter vector $\act$.
+\subsection{Parameterized Policies}
+
+There arise many situations where the  policy parameter vector $\app$ is dependent on the context. The context is the set of relevant task parameters $\taskp$ which have an influence on the values of the policy parameters. Task parameters, \emph{\taskpsp}, define a task. In the case of application to manipulation, these parameters could be the position and orientation of the object, the object's geometry, the object's color, and any number of other defining properties. These task parameters are constant in time and do not include any robot properties. 
+
+\begin{align}
+\label{eq:gating}\polg(\app|\taskp)
+\end{align}
+
+To define the relationship between task parameters and policy parameters, a new policy is needed which will map $\taskp$ to $\app$, called the gating policy (Eq. \ref{eq:gating}). The parameters $\app$ it controls are inputs to the action policy, which controls the actual action being performed. Now there is a two-level system: input task parameters into the gating policy which outputs policy parameters for the action policy, input these policy parameters to the action policy to perform the action. 
+
+
+Parameterized policies use regression techniques to map the relevant task parameter vector $\taskp$ to the chosen policy parameter vector $\app$.
 
 \color{red} Explain Gennaro's work here \color{black}
+
+\begin{align}
+\costf\mbox{: } &\label{eq:cost} \appsp \times \taskpsp \mapsto \mathbb{R}&\mbox{Cost function}
+\end{align}
+
+\subsubsection{Stochastic Optimization for Parameterized Policies}
+
+\begin{align}
+\label{eq:gating_par}\polg(\app_\mu,\covar|\taskp)
+\end{align}
+
+Gerhard Neumann
+
+
 
 \subsection{Option Policies}
 
 When there are a discrete number of options for policy parameters, classification is used instead of regression for the gating policy. Daniel ran experiments using this two-level policy structure with the goal of finding multiple action policy solutions to a single task \cite{daniel}. The task parameters used corresponded directly with which option to take. 
+
+\subsubsection{Stochastic Optimization for Option Policies}
+
+Basic idea: use data gathered during stochastic optimization to discover option policies
+
+This is your work. See later.
 
 
 \section{Perceptual De-aliasing}
@@ -127,7 +175,7 @@ We don't always have direct excess to the task parameters. Instead, we have acce
 \end{align}
 
 \begin{align}
-\label{eq:fgating}\pi(\act,\feat)
+\label{eq:fgating}\pi(\app,\feat)
 \end{align}
 
 It is necessary to define the idea of relevance: what makes a feature or a task parameter relevant? A task parameter is relevant when it can take on different values that will lead to different optimal actions \eqref{eq:relq}. We are assuming that there is a task parameter that independently influences the cost. It is possible that a case could arise where only changing two cost parameters at once causes a different action to be taken, but we are not considering that at this time. 
@@ -136,32 +184,13 @@ It is necessary to define the idea of relevance: what makes a feature or a task 
 \taskp_i =& <\taskpv_1,\taskpv_2,...,\taskpv_i,...\taskpv_N> \notag & 
 \\
 \taskp'_i =& <\taskpv_1,\taskpv_2,...,\taskpv'_i,...\taskpv_N> \notag & \taskpv_i \neq \taskpv'_i \\
-\label{eq:relq} \taskp_i \in \taskpsp_{REL} \iff&\argmin{\act}\costf(\act,\taskp_i) \neq \argmin{\act}\costf(\act,\taskp'_i)\\
+\label{eq:relq} \taskp_i \in \taskpsp_{REL} \iff&\argmin{\app}\costf(\app,\taskp_i) \neq \argmin{\app}\costf(\app,\taskp'_i)\\
 \taskpsp_{REL} \cup & \taskpsp_{IRR} = \taskpsp,   \taskpsp_{REL} \cap \taskpsp_{IRR} = \emptyset 
 \end{align}
 
-Multiple tasks are present when \eqref{eq:relq} is true since there are two ideal actions. Therefore there are multiple tasks present if and only if there is at least one relevant task parameter. If a difference in one or more of the features can be detected when the task parameter changes, then it will be possible to perceptually de-alias the two tasks. Since the goal is to de-alias in an online fashion, the ideal action, $\argmin{\act}\costf(\act,\taskp)$, will not be known at the moment of de-aliasing. Instead, the value of the cost function $\costf$ is used as an indicator by how different it is for different values of the task parameter in question \eqref{eq:relq} as to whether or not the ideal action will be different in the two cases. Sometimes this will lead to overzealous de-aliasing, but perceptual classes can easily be merged again if it is discovered the same actions are being performed.
-
-\section{Related Work}
-
-Daniel, Neumann, and Peters, described an approach at IROS 2012 \cite{daniel} that used relative entropy policy search with hierarchical policy representations. They are not exactly using perceptual classes, but are finding multiple solutions to a single task. For their algorithm, a number of options are predefined, greater than the number of possible optima, and redundant options are deleted as the algorithm runs, with care taken to avoid premature deletion. Their robot playing tetherball example uses a 29-dimensional action space $\actsp$, and imitation learning is used to set the initial parameters of the dynamic motion primitive (DMP). It is not clear if these options all have the same initial policy, or if they are seeded differently. By starting with a large number of redundant options, it is more likely that they will cover the action space and find the possible solutions than if using a single option and then splitting into new options. While this may be feasible for a small number of basis functions, when it is a larger search space, the number of needed initial perceptual classes will increase rapidly. 
-
-Calinon used a Gaussian Mixture Model to estimate the structure of the cost function \costf, mapping the cost as a function of action as if it were a probability density function \cite{calinon}. In their experiment, only one task was shown, so accordingly there were no task parameters, and the cost function was reduced to $\costf(\act)$ instead of the full $\costf(\act,\taskp)$. Their experiment uses an action space that is 2-dimensional. In very large and high-dimensional action spaces, it will require a very large number of samples to accurately estimate the cost function's Gaussian Mixture Model. To tackle the problem of finding global optimums with a local search, Calinon employs decaying exploration noise. If the exploration noise is too low or zero, the optimizer would become trapped in the local minima, and not explore the rest of the cost function.
-
-Task-specific representations were explored by Piater et al. [2] in which perception-action solutions were created by interleaving a percept classifier with a reinforcement learner. Effectively this means that while the reinforcement learner is trying to optimize the task at hand, the percept classifier is trying to parse out the perceptual classes. Once the perceptual classes are distinguished, the reinforcement learner will work independently on each of the newly defined perceptual classes. The reinforcement method they used was Markov Decision Processes (MDP). Their method for de-aliasing was to determine if the ideal action $\act$ was converging or not. They measured this convergence by seeing if the difference errors between subsequent iterations of the MDP updates were getting smaller or not. This method is the logical parallel to the Mean Divergence technique I tested. They assume any failure to converge directly is caused by aliasing, and not due to possible inherent instability in the system. They concede that their experiments were run in very small action-spaces $\actsp$, and that scalability may not be feasible. 
-
+Multiple tasks are present when \eqref{eq:relq} is true since there are two ideal actions. Therefore there are multiple tasks present if and only if there is at least one relevant task parameter. If a difference in one or more of the features can be detected when the task parameter changes, then it will be possible to perceptually de-alias the two tasks. Since the goal is to de-alias in an online fashion, the ideal action, $\argmin{\app}\costf(\app,\taskp)$, will not be known at the moment of de-aliasing. Instead, the value of the cost function $\costf$ is used as an indicator by how different it is for different values of the task parameter in question \eqref{eq:relq} as to whether or not the ideal action will be different in the two cases. Sometimes this will lead to overzealous de-aliasing, but perceptual classes can easily be merged again if it is discovered the same actions are being performed.
 
 \section{Methods}
-\subsection{Stochastic Optimization}
-
-\begin{align*}
-\act_{k=1\dots K} & {\sim}\mathcal{N}({\act},{\Sigma})\\
-\forall k~J_k & = J(\act_k)\\
-\forall k~P_k & = \mbox{``lower cost} \Rightarrow \mbox{higher weight''}\\
-\act^{new} & = \sum_{k=1}^{K} P_k \act_k\\
-\Sigma^{new} & = \sum_{k=1}^{K}P_k(\act_k-\act)(\act_k-\act)^\intercal
-\end{align*}
-
 
 \subsection{Task Splitting}
 The following description will be given in the context of the simulated robot which will be discussed further later in the paper, but this algorithm can be equally well applied to performing and action which is defined by a discrete number of parameters. 
@@ -177,7 +206,7 @@ If there is only one task, the algorithm will proceed in this manner, performing
   \label{fig:1vs2tasks}
 \end{figure} 
 
-In Figure \ref{fig:1vs2tasks}, the top two plots show the situation where there is only one task, i.e. $\taskpsp_1 = \taskpsp$. The bottom two plots shows the situation where there are two tasks. The blue line shows $\costf(\act,\taskp), \taskp \in \taskpsp_1$
+In Figure \ref{fig:1vs2tasks}, the top two plots show the situation where there is only one task, i.e. $\taskpsp_1 = \taskpsp$. The bottom two plots shows the situation where there are two tasks. The blue line shows $\costf(\app,\taskp), \taskp \in \taskpsp_1$
 
 \color{red}Each task has its own cost function. When two tasks are being treated as the same task, some of the samples will be the cost function from one task, and some will be the cost function from the other task. \color{black} When the sampling distribution is at a location where the two cost functions vary, a histogram of the costs will reveal that there are two different clusters. By looking only at the cost distribution, regardless of the action taken, we are assuming that the action taken does not matter. In the case where the covariance matrix for the sampling distribution is small, this serves as a fairly accurate estimation, since all the actions taken in the K samples are very similar. Once the costs are clustered, any supervised learning algorithm can be used to determine which features indicate which cluster. For this work, a classification tree was used. If we had followed in a similar thread as Piater et al., the parallel would have been to determine visual classes by using the covariance matrix. If the covariance matrix remained large, or moved back and forth repeatedly, we could assume this was due to visual class aliasing, but it may also happen by chance, and is dependent on the reinforcement learning algorithm. Instead, by using approximately equivalent actions as if they were the same action, visual classes can be found completely independently of the reinforcement algorithm used. 
 
@@ -274,6 +303,16 @@ Setup 1 resulted in a split based on the height of the rod. The final action for
 While the three tasks seem quite close to one another in linear space, it is clear that the laying-down rod is very distant from the other two tasks in angular space. This distance explains why the correct action was found between the two standing rods, but not between a standing and a laying-down rod. Since the short standing rod was used as the initial imitation-learned solution, we can measure the likelihood that a sample taken from here will reach a successful grasp for one of the other tasks. One hundred samples were taken with a reasonable covariance matrix and the initial mean of the short standing rod. The Euclidean distance between these samples and the two other tasks was then calculated. In Figure \ref{fig:distance} these distances are plotted, with the 2 sigma cutoff around each task's optimal action. The very tall rod successfully has many samples within range of its optimal action. The laying-down rod does not have any samples anywhere close to being within range. The optimal actions are too different from each other that one solution will not provide any information about the other solution.
 
 \subsection{Global Optima with Local Search}
+
+
+\section{Related Work}
+
+Daniel, Neumann, and Peters, described an approach at IROS 2012 \cite{daniel} that used relative entropy policy search with hierarchical policy representations. They are not exactly using perceptual classes, but are finding multiple solutions to a single task. For their algorithm, a number of options are predefined, greater than the number of possible optima, and redundant options are deleted as the algorithm runs, with care taken to avoid premature deletion. Their robot playing tetherball example uses a 29-dimensional action space $\appsp$, and imitation learning is used to set the initial parameters of the dynamic motion primitive (DMP). It is not clear if these options all have the same initial policy, or if they are seeded differently. By starting with a large number of redundant options, it is more likely that they will cover the action space and find the possible solutions than if using a single option and then splitting into new options. While this may be feasible for a small number of basis functions, when it is a larger search space, the number of needed initial perceptual classes will increase rapidly. 
+
+Calinon used a Gaussian Mixture Model to estimate the structure of the cost function \costf, mapping the cost as a function of action as if it were a probability density function \cite{calinon}. In their experiment, only one task was shown, so accordingly there were no task parameters, and the cost function was reduced to $\costf(\app)$ instead of the full $\costf(\app,\taskp)$. Their experiment uses an action space that is 2-dimensional. In very large and high-dimensional action spaces, it will require a very large number of samples to accurately estimate the cost function's Gaussian Mixture Model. To tackle the problem of finding global optimums with a local search, Calinon employs decaying exploration noise. If the exploration noise is too low or zero, the optimizer would become trapped in the local minima, and not explore the rest of the cost function.
+
+Task-specific representations were explored by Piater et al. [2] in which perception-action solutions were created by interleaving a percept classifier with a reinforcement learner. Effectively this means that while the reinforcement learner is trying to optimize the task at hand, the percept classifier is trying to parse out the perceptual classes. Once the perceptual classes are distinguished, the reinforcement learner will work independently on each of the newly defined perceptual classes. The reinforcement method they used was Markov Decision Processes (MDP). Their method for de-aliasing was to determine if the ideal action $\app$ was converging or not. They measured this convergence by seeing if the difference errors between subsequent iterations of the MDP updates were getting smaller or not. This method is the logical parallel to the Mean Divergence technique I tested. They assume any failure to converge directly is caused by aliasing, and not due to possible inherent instability in the system. They concede that their experiments were run in very small action-spaces $\appsp$, and that scalability may not be feasible. 
+
 
 \section{Conclusion}
 
