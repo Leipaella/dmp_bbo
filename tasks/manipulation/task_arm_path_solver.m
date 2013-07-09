@@ -107,7 +107,11 @@ task_solver.close_sim = @close_vrep;
     
     %we need to write the path data to a path file
     return_dir = cd();
-    directory = 'C:\Program Files (x86)\V-REP3\V-REP_PRO_EDU';
+    if (~isempty(findstr(pwd,'stulp')))
+      directory = '~stulp/prog/matlab/dmp_bbo/vrepversions/V-REP_PRO_EDU_V3_0_4_Linux/';
+    else
+      directory = 'C:\Program Files (x86)\V-REP3\V-REP_PRO_EDU';
+    end
     cd(directory);
     
     
@@ -152,7 +156,11 @@ task_solver.close_sim = @close_vrep;
       %load the applicable file
       %only load file if the current task is different from the last task
       if task.id ~= task_solver.old_task_id
-        res2 = vrep.simxLoadScene(filename,false,vrep.simx_opmode_oneshot_wait);
+        if (~isempty(findstr(pwd,'stulp')))
+          res2 = vrep.simxLoadScene(task_solver.clientID,filename,false,vrep.simx_opmode_oneshot_wait);
+        else
+          res2 = vrep.simxLoadScene(filename,false,vrep.simx_opmode_oneshot_wait);
+        end
         task_solver.old_task_id = task.id;
       else
           res2 = vrep.simx_error_noerror;
@@ -178,7 +186,11 @@ task_solver.close_sim = @close_vrep;
     pause(0.5);
     cost_vars = csvread('cost_vars.csv');
     cd(return_dir);
-    cd('C:\Users\laura\dmp\dmp_bbo\rollouts');
+    if (~isempty(findstr(pwd,'stulp')))
+      cd('~stulp/prog/matlab/dmp_bbo/rollouts');
+    else
+      cd('C:\Users\laura\dmp\dmp_bbo\rollouts');
+    end
     if ~exist(task_solver.name,'dir'), mkdir(task_solver.name); end
     cd(task_solver.name);
     files = dir('traj*');

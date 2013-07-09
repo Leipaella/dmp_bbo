@@ -89,7 +89,7 @@ while i_update < n_updates
   % Generate a task and percept
   
   p = randperm(n_tasks);
-  r = randi(n_tasks,n_samples_per_update);
+  r = ceil(n_tasks*rand(1,n_samples_per_update));
   r = sort(r);
   
   for i_instance = 1:n_samples_per_update
