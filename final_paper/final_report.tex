@@ -140,6 +140,80 @@ Parameterized policies use regression techniques to map the relevant task parame
 \costf\mbox{: } &\label{eq:cost} \appsp \times \taskpsp \mapsto \mathbb{R}&\mbox{Cost function}
 \end{align}
 
+
+
+%\newcommand{\polg}   {\ensuremath{\pi^g}}
+%\newcommand{\pol}    {\ensuremath{\pi}}
+%\newcommand{\act}    {\ensuremath{\mathbf{a}}}
+%\newcommand{\sta}    {\ensuremath{\mathbf{s}}}
+%\newcommand{\appsp}  {\ensuremath{\Theta}}
+%\newcommand{\feat}   {\ensuremath{f}}
+%\newcommand{\featsp} {\ensuremath{\emph{F}}}
+%\newcommand{\costsp} {\ensuremath{R}}
+%\newcommand{\taskp}  {\ensuremath{\mathbf{q}}}
+%\newcommand{\taskpv} {\ensuremath{q}}
+%\newcommand{\costf}  {\ensuremath{J}}
+%\newcommand{\obsm}   {\ensuremath{O}}
+%\newcommand{\app}    {\ensuremath{\bm{\theta}}}
+%\newcommand{\taskpsp}{\ensuremath{Q}}
+%\newcommand{\featv}  {\ensuremath{\mathbf{f}}}
+%\newcommand{\covar}  {\ensuremath{\bm{\Sigma}}}
+
+\begin{table}[ht]
+  \centering
+\begin{scriptsize}
+\begin{tabular}{|l|l|rl|rl|rl|}
+%-------------------------------------------------------------------------
+%-------------------------------------------------------------------------
+\hline
+\multicolumn{8}{|l|}{Two-step methods}\\
+%-------------------------------------------------------------------------
+Here                          
+& $\pol(\act|\sta,\app)$ 
+& {\bf task pars}            & \taskp 
+& {\bf policy pars}          & \app 
+& {\bf policy pars function} & $\polg: \taskpsp \mapsto \appsp$ ($\polg: \taskp \mapsto \app$)\\  
+%-------------------------------------------------------------------------
+\cite{ude10taskspecific}      
+& not specified
+& task pars            & $\mathbf{q}$ 
+& policy pars          & $[\mathbf{w},\tau,g]$ 
+& function             & $\mathbf{G}: \mathbf{q} \mapsto [\mathbf{w},\tau,g]$ \\  
+%-------------------------------------------------------------------------
+\cite{kupcsik13dataefficient} 
+& $\pi(\mathbf{u}|\mathbf{x},\mathbf{\omega})$ 
+& context              & $\mathbf{s}$
+& policy pars          & $\mathbf{\omega}$ 
+& upper level policy   & $\pi(\mathbf{\omega}|\mathbf{s})$ \\  
+%-------------------------------------------------------------------------
+\cite{silva12learning}        
+& $\pi_\mathbf{\theta}$
+& task pars            & $\mathbf{\tau}$ 
+& policy pars          & ${\theta}$
+& parameterized skill  & $\Theta: T \mapsto \mathbb{R}^N$ ($\Theta: \mathbf{\tau} \mapsto \mathbf{\theta}$)\\
+%-------------------------------------------------------------------------
+%-------------------------------------------------------------------------
+\hline
+\multicolumn{8}{|l|}{One-step methods}\\
+%-------------------------------------------------------------------------
+\cite{matsubara11learning}    
+& $f(x,\mathbf{s}; \mathbf{W})$
+& style pars           & $\mathbf{s}$ 
+& \multicolumn{2}{c|}{N.A.}   
+& \multicolumn{2}{c|}{N.A.} \\  
+%-------------------------------------------------------------------------
+\cite{stulp13learning}        
+& $h_\mathbf{u}(s,\mathbf{q})$
+& task pars            & $\mathbf{q}$ 
+& \multicolumn{2}{c|}{N.A.}   
+& \multicolumn{2}{c|}{N.A.} \\  
+%-------------------------------------------------------------------------
+%-------------------------------------------------------------------------
+\end{tabular}
+\end{scriptsize}
+  \caption{\label{tab_nomenclature} Different nomenclature in related work on paramterized skills.}
+\end{table}
+
 \subsubsection{Stochastic Optimization for Parameterized Policies}
 
 \begin{align}
@@ -319,43 +393,8 @@ Task-specific representations were explored by Piater et al. [2] in which percep
 Online de-aliasing will work when the actions that need to be taken in different contexts are near to each other in action-space. This supports the fact that if the robot is trying to learn two movements that are very different, learning one of them does not give any information on how to do the other. Clustering the costs after a number of similar actions successfully allows the determination of visual classes and provides the advantage of not requiring a bond between the chosen reinforcement algorithm (in this case stochastic optimization) and the chosen supervised learning algorithm (in this case decision trees). In the situations where online de-aliasing works, the actions are very similar and based on the perceptual context. This occurs usually when the action is parameterized by the relevant perceptual feature. Future work would be to combine discretized visual classes that can be formed by online de-aliasing into perceptually parameterized skills.
 
 \section{Bibliography}
+\bibliographystyle{apalike}
+\bibliography{final_report}
 
-\begin{thebibliography}{9}
-
-\bibitem{stulp}
-  F. Stulp, E. Theodorou, and S. Schaal,
-  \emph{Reinforcement Learning with Sequences f Motion Primitives for Robust Manipulation}.
-  IEEE Transactions on Robotics, 
-  28(6),
-  2012.
-
-\bibitem{piater}
-  J. Piater, S. Jodogne, R. Detry, et al.,
-  \emph{Learning visual representations for perception-action systems}.
-  The International Journal of Robotics Research, 
-  30(3),
-  2011.
-  
-  \bibitem{daniel}
-    C. Daniel, G. Neumann, and J. Peters,
-    \emph{Learning concurrent motor skills in versatile solution spaces}.
-    Intelligent Robots and Systems Conference, Vilamoura, Algarve,
-    2012.
-    
-\bibitem{calinon}
-  S. Calinon, A. Pervez, and D. G. Caldwell,
-  \emph{Multi-optima exploration with adaptive Gaussian mixture model}.
-  International Conference on Development and Learning, 
-  2012.
-  
-  
-\bibitem{bagnell}
-  J. A. Bagnell, F. Cavalcanti, L. Cui, et al.,
-  \emph{An integrated system for autonomous robotics manipulation}.
-  Intelligent Robots and Systems Conference, Vilamoura, Algarve, 
-  2012.
-  
-
-\end{thebibliography}
 
 \end{document}

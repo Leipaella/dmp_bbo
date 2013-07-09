@@ -1,3 +1,6 @@
+*.blg
+*.bbl
+*.bak
 *.aux
 *.idx
 *.log
