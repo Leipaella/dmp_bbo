@@ -106,7 +106,7 @@ task_solver.close_sim = @close_vrep;
     end
     
     %we need to write the path data to a path file
-    return_dir = cd();
+    return_dir = pwd;
     if (~isempty(findstr(pwd,'stulp')))
       directory = '~stulp/prog/matlab/dmp_bbo/vrepversions/V-REP_PRO_EDU_V3_0_4_Linux/';
     else
@@ -168,7 +168,13 @@ task_solver.close_sim = @close_vrep;
       if res2==vrep.simx_error_noerror
         fprintf('Loaded the file %s\n',filename);
         %run the simulation
-        vrep.simxStartSimulation(vrep.simx_opmode_oneshot);
+        if (~isempty(findstr(pwd,'stulp')))
+          disp('Run simulator manually and press a button here.')
+          pause
+          %vrep.simxStartSimulation(task_solver.clientID,vrep.simx_opmode_oneshot);
+        else
+          vrep.simxStartSimulation(vrep.simx_opmode_oneshot);
+        end
       else
         fprintf('Did not successfully load the file\n');
       end
@@ -180,7 +186,11 @@ task_solver.close_sim = @close_vrep;
         fprintf('.');
       end
       
-      vrep.simxStopSimulation(vrep.simx_opmode_oneshot);
+      if (~isempty(findstr(pwd,'stulp')))
+        %vrep.simxStopSimulation(task_solver.clientID,vrep.simx_opmode_oneshot);
+      else
+        %vrep.simxStopSimulation(vrep.simx_opmode_oneshot);
+      end
       %vrep.simxCloseScene(vrep.simx_opmode_oneshot_wait);
     end
     pause(0.5);
@@ -198,11 +208,19 @@ task_solver.close_sim = @close_vrep;
     csvwrite(sprintf('trajectory%04d.csv',n_files+1),traj);
     csvwrite(sprintf('costvars%04d.csv',n_files+1),cost_vars);
     
+    if (~isempty(findstr(pwd,'stulp')))
+      cd('~stulp/prog/matlab/dmp_bbo')
+    end
+    
   end
 
     function close_vrep
-       task_solver.vrep.simxFinish();
-       task_solver.vrep.delete();  
+      if (~isempty(findstr(pwd,'stulp')))
+        task_solver.vrep.simxFinish(task_solver.clientID);
+      else
+        task_solver.vrep.simxFinish();
+      end
+      task_solver.vrep.delete();
     end
 
 
