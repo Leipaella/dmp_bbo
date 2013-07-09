@@ -1,3 +1,7 @@
+extApi.h
+remoteApi.so
+vrep
+vrepversions/
 *.mat
 results
 data*
