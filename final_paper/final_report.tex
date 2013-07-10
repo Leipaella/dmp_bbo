@@ -6,14 +6,16 @@
 \usepackage{amssymb}
 \usepackage{amsmath}
 \usepackage{bm}
+\usepackage[numbers]{natbib}
 
 \title{On-line Option Discovery and De-Aliasing for Direct Policy Search}
 \date{July 4, 2013}
 \author{Laura Vogelaar}
 \titlepic{\includegraphics{cover.png}}
+
 \makeindex
 
-\newcommand{\polg}   {\ensuremath{\pi^g}}
+\newcommand{\polg}   {\ensuremath{\Pi}}
 \newcommand{\pol}    {\ensuremath{\pi}}
 \newcommand{\act}    {\ensuremath{\mathbf{a}}}
 \newcommand{\sta}    {\ensuremath{\mathbf{s}}}
@@ -34,7 +36,8 @@
 
 \begin{document}
 
-%\maketitle
+\maketitle
+
 \newpage
 \thispagestyle{empty}
 \mbox{}
@@ -64,11 +67,11 @@ This is a report of a research internship performed at ENSTA ParisTech in the Ro
 \newpage
 \section{Introduction}
 
-This internship was completed at \'{E}cole Nationale Sup\'{e}rieure de Techniques Avanc\'{e}es, Robotics and Computer Vision Lab under the supervision of Dr. Freek Stulp. The internship consisted of a research project, whose topic was how to autonomously de-alias perceptually-aliased tasks while running stochastic optimization. Dr. Stulp has been using stochastic optimization already in a variety of applications \cite{stulp}, and my goal was to add a way to create context-specific optimizers in instances where there are distinctly different contexts and actions. I worked directly under Dr. Stulp, and regular meetings between the two of us facilitated the development and direction of the project.
+This internship was completed at \'{E}cole Nationale Sup\'{e}rieure de Techniques Avanc\'{e}es, Robotics and Computer Vision Lab under the supervision of Dr. Freek Stulp. The internship consisted of a research project, whose topic was how to autonomously de-alias perceptually-aliased tasks while running stochastic optimization. Dr. Stulp has been using stochastic optimization already in a variety of applications \cite{stulp12reinforcement}, and my goal was to add a way to create context-specific optimizers in instances where there are distinctly different contexts and actions. I worked directly under Dr. Stulp, and regular meetings between the two of us facilitated the development and direction of the project.
 
-One of the longstanding difficulties in robotics is autonomously learning new skills to conquer different tasks. A human can distinguish that when presented with one particular situation, the best action may be different than when presented with a different situation. Take the example of lifting a translucent milk carton. We've all experienced picking up an empty carton when we expected it to be full and suffering from overshooting. This shows that there are two different actions that are performed: one action for when the carton is empty, and one action for when the carton is full. It is only from our experience in lifting milk cartons that we know the fullness is the important feature to decide our action based upon, not the color or the type of milk or any number of other irrelevant features. This mapping of relevant features to actions is called a ``perceptual class'' \cite{piater}. Imagine now the case where the milk carton is opaque instead of translucent. There are still two actions that should be taken, one when the carton is full, and one when the carton is empty, but we can no longer distinguish the two perceptual classes, since there are no relevant features. This is known as perceptual aliasing. When perceptual aliasing is present, the best performance will either be an action that is a compromise in-between the two ideal actions that will work partially for both tasks, or one of the ideal actions that will work well for one task and poorly for the other task. 
+One of the longstanding difficulties in robotics is autonomously learning new skills to conquer different tasks. A human can distinguish that when presented with one particular situation, the best action may be different than when presented with a different situation. Take the example of lifting a translucent milk carton. We've all experienced picking up an empty carton when we expected it to be full and suffering from overshooting. This shows that there are two different actions that are performed: one action for when the carton is empty, and one action for when the carton is full. It is only from our experience in lifting milk cartons that we know the fullness is the important feature to decide our action based upon, not the color or the type of milk or any number of other irrelevant features. This mapping of relevant features to actions is called a ``perceptual class'' \cite{piater11learning}. Imagine now the case where the milk carton is opaque instead of translucent. There are still two actions that should be taken, one when the carton is full, and one when the carton is empty, but we can no longer distinguish the two perceptual classes, since there are no relevant features. This is known as perceptual aliasing. When perceptual aliasing is present, the best performance will either be an action that is a compromise in-between the two ideal actions that will work partially for both tasks, or one of the ideal actions that will work well for one task and poorly for the other task. 
 
-The goal of this work is to start in a situation where we don't know that the fullness is what matters for picking up the milk carton, and we don't know that there are two tasks --- we start assuming there is only one task --- and to discover that there are two tasks, that they are defined by the fullness/emptiness, and what the ideal action is to take in both cases. This process is called perceptual de-aliasing since at first all perceptual classes are aliased into one task, and the algorithm will split the perceptual class into non-aliased classes \cite{daniel}. We will assume that there is at least one feature that can be used to detect each task (there is no opaque carton). The motivation is to perform perceptual de-aliasing online, while also optimizing the action choices at the same time.
+The goal of this work is to start in a situation where we don't know that the fullness is what matters for picking up the milk carton, and we don't know that there are two tasks --- we start assuming there is only one task --- and to discover that there are two tasks, that they are defined by the fullness/emptiness, and what the ideal action is to take in both cases. This process is called perceptual de-aliasing since at first all perceptual classes are aliased into one task, and the algorithm will split the perceptual class into non-aliased classes \cite{daniel12learning}. We will assume that there is at least one feature that can be used to detect each task (there is no opaque carton). The motivation is to perform perceptual de-aliasing online, while also optimizing the action choices at the same time.
 
 The experiments that were performed applied stochastic optimization and a perceptual de-aliasing technique to manipulation. The different tasks were different objects that were to be lifted by a robot arm with a simple two finger gripper. The stochastic optimization algorithm and perceptual de-aliasing techniques will be discussed in further detail in the methods section.
 
@@ -77,11 +80,6 @@ The experiments that were performed applied stochastic optimization and a percep
 %policy
 
 \subsection{Parameterized Policies}
-
-\begin{align}
-\label{eq:policy}\pi(\act|\sta,\app) &\equiv  \pi_{\app}(\act|\sta) & \app \in \appsp \\
-\appsp &\in \mathbb{R}^N & \mbox{Action space}
-\end{align}
 
 \begin{align}
 \label{eq:policy}\pi(\act|\sta,\app) &\equiv  \pi_{\app}(\act|\sta) & \app \in \appsp \\
@@ -137,7 +135,7 @@ Parameterized policies use regression techniques to map the relevant task parame
 \color{red} Explain Gennaro's work here \color{black}
 
 \begin{align}
-\costf\mbox{: } &\label{eq:cost} \appsp \times \taskpsp \mapsto \mathbb{R}&\mbox{Cost function}
+\costf\mbox{: } &\label{eq:cost_task} \appsp \times \taskpsp \mapsto \mathbb{R}&\mbox{Cost function}
 \end{align}
 
 
@@ -166,27 +164,27 @@ Parameterized policies use regression techniques to map the relevant task parame
 %-------------------------------------------------------------------------
 %-------------------------------------------------------------------------
 \hline
-\multicolumn{8}{|l|}{Two-step methods}\\
+\multicolumn{8}{|l|}{\em Parameterized skills: Two-step methods}\\
 %-------------------------------------------------------------------------
-Here                          
+This report                          
 & $\pol(\act|\sta,\app)$ 
 & {\bf task pars}            & \taskp 
 & {\bf policy pars}          & \app 
 & {\bf policy pars function} & $\polg: \taskpsp \mapsto \appsp$ ($\polg: \taskp \mapsto \app$)\\  
 %-------------------------------------------------------------------------
-\cite{ude10taskspecific}      
+\citet{ude10taskspecific}      
 & not specified
 & task pars            & $\mathbf{q}$ 
 & policy pars          & $[\mathbf{w},\tau,g]$ 
 & function             & $\mathbf{G}: \mathbf{q} \mapsto [\mathbf{w},\tau,g]$ \\  
 %-------------------------------------------------------------------------
-\cite{kupcsik13dataefficient} 
+\citet{kupcsik13dataefficient} 
 & $\pi(\mathbf{u}|\mathbf{x},\mathbf{\omega})$ 
 & context              & $\mathbf{s}$
 & policy pars          & $\mathbf{\omega}$ 
 & upper level policy   & $\pi(\mathbf{\omega}|\mathbf{s})$ \\  
 %-------------------------------------------------------------------------
-\cite{silva12learning}        
+\citet{silva12learning}        
 & $\pi_\mathbf{\theta}$
 & task pars            & $\mathbf{\tau}$ 
 & policy pars          & ${\theta}$
@@ -194,24 +192,34 @@ Here
 %-------------------------------------------------------------------------
 %-------------------------------------------------------------------------
 \hline
-\multicolumn{8}{|l|}{One-step methods}\\
+\multicolumn{8}{|l|}{\em Parameterized skills: One-step methods}\\
 %-------------------------------------------------------------------------
-\cite{matsubara11learning}    
+\citet{matsubara11learning}    
 & $f(x,\mathbf{s}; \mathbf{W})$
 & style pars           & $\mathbf{s}$ 
 & \multicolumn{2}{c|}{N.A.}   
 & \multicolumn{2}{c|}{N.A.} \\  
 %-------------------------------------------------------------------------
-\cite{stulp13learning}        
+\citet{stulp13learning}        
 & $h_\mathbf{u}(s,\mathbf{q})$
 & task pars            & $\mathbf{q}$ 
 & \multicolumn{2}{c|}{N.A.}   
 & \multicolumn{2}{c|}{N.A.} \\  
 %-------------------------------------------------------------------------
 %-------------------------------------------------------------------------
+\hline
+\multicolumn{8}{|l|}{\em Option policies}\\
+%-------------------------------------------------------------------------
+\citet{daniel12learning}    
+& $\pi(\mathbf{a}|\mathbf{s},o)$
+& \multicolumn{2}{c|}{N.A. ($\approx\mathbf{s}$)}   
+& option           & $o$ 
+& gating network   & $\pi(o|\mathbf{s})$ \\  
+%-------------------------------------------------------------------------
+%-------------------------------------------------------------------------
 \end{tabular}
 \end{scriptsize}
-  \caption{\label{tab_nomenclature} Different nomenclature in related work on paramterized skills.}
+  \caption{\label{tab_nomenclature} Different nomenclature in related work on parameterized skills with trajectory-based policy representations.}
 \end{table}
 
 \subsubsection{Stochastic Optimization for Parameterized Policies}
@@ -220,13 +228,15 @@ Here
 \label{eq:gating_par}\polg(\app_\mu,\covar|\taskp)
 \end{align}
 
-Gerhard Neumann
+\citet{kupcsik13dataefficient}
+
+\citet{marin12towards}
 
 
 
 \subsection{Option Policies}
 
-When there are a discrete number of options for policy parameters, classification is used instead of regression for the gating policy. Daniel ran experiments using this two-level policy structure with the goal of finding multiple action policy solutions to a single task \cite{daniel}. The task parameters used corresponded directly with which option to take. 
+When there are a discrete number of options for policy parameters, classification is used instead of regression for the gating policy. \citet{daniel12learning} ran experiments using this two-level policy structure with the goal of finding multiple action policy solutions to a single task. The task parameters used corresponded directly with which option to take. 
 
 \subsubsection{Stochastic Optimization for Option Policies}
 
@@ -237,7 +247,7 @@ This is your work. See later.
 
 \section{Perceptual De-aliasing}
 
-\color{red}Combine the use of a gating policy (decision trees) and an action policy that uses stochastic optimization. Get the data from the stochastic optimization updates. Also we use features not q. Cite Piater\color{black}
+\color{red}Combine the use of a gating policy (decision trees) and an action policy that uses stochastic optimization. Get the data from the stochastic optimization updates. Also we use features not q. Cite \citet{piater11learning}\color{black}
 
 We don't always have direct excess to the task parameters. Instead, we have access to the detectable features which may or may not be relevant in determining the action policy parameters.  The feature space contains the set of all possible feature vectors that can be seen. Each feature within this vector can be either a real number or one of a discrete set. In the robot example, the features might be the color of the object, in which case its value is one of a discrete set such as \{red, yellow, blue\}, or it could be the color intensity measured by a sensor, in which case it would be a continuous numeric value. The features which are observed are a function of the task parameters \eqref{eq:obs}. The color sensor value would be a function of the object's color, and the visual data would be a function of the object's geometry and orientation with respect to the camera, and so on.
 
@@ -282,7 +292,7 @@ If there is only one task, the algorithm will proceed in this manner, performing
 
 In Figure \ref{fig:1vs2tasks}, the top two plots show the situation where there is only one task, i.e. $\taskpsp_1 = \taskpsp$. The bottom two plots shows the situation where there are two tasks. The blue line shows $\costf(\app,\taskp), \taskp \in \taskpsp_1$
 
-\color{red}Each task has its own cost function. When two tasks are being treated as the same task, some of the samples will be the cost function from one task, and some will be the cost function from the other task. \color{black} When the sampling distribution is at a location where the two cost functions vary, a histogram of the costs will reveal that there are two different clusters. By looking only at the cost distribution, regardless of the action taken, we are assuming that the action taken does not matter. In the case where the covariance matrix for the sampling distribution is small, this serves as a fairly accurate estimation, since all the actions taken in the K samples are very similar. Once the costs are clustered, any supervised learning algorithm can be used to determine which features indicate which cluster. For this work, a classification tree was used. If we had followed in a similar thread as Piater et al., the parallel would have been to determine visual classes by using the covariance matrix. If the covariance matrix remained large, or moved back and forth repeatedly, we could assume this was due to visual class aliasing, but it may also happen by chance, and is dependent on the reinforcement learning algorithm. Instead, by using approximately equivalent actions as if they were the same action, visual classes can be found completely independently of the reinforcement algorithm used. 
+\color{red}Each task has its own cost function. When two tasks are being treated as the same task, some of the samples will be the cost function from one task, and some will be the cost function from the other task. \color{black} When the sampling distribution is at a location where the two cost functions vary, a histogram of the costs will reveal that there are two different clusters. By looking only at the cost distribution, regardless of the action taken, we are assuming that the action taken does not matter. In the case where the covariance matrix for the sampling distribution is small, this serves as a fairly accurate estimation, since all the actions taken in the K samples are very similar. Once the costs are clustered, any supervised learning algorithm can be used to determine which features indicate which cluster. For this work, a classification tree was used. If we had followed in a similar thread as~\citet{piater11learning}, the parallel would have been to determine visual classes by using the covariance matrix. If the covariance matrix remained large, or moved back and forth repeatedly, we could assume this was due to visual class aliasing, but it may also happen by chance, and is dependent on the reinforcement learning algorithm. Instead, by using approximately equivalent actions as if they were the same action, visual classes can be found completely independently of the reinforcement algorithm used. 
 
 Once a new visual class is identified by the supervised learning algorithm, the sampling distribution and covariance is initialized as the sampling distribution of both tasks before the split. If the cost function for both tasks is smooth and has a non-zero gradient at all points, the new optimizer should be able to find the minimum for the new task. However, in real applications, even if the cost function is smooth, there is often only a small range of action parameters near the solution which give any useful feedback. Still using a Gaussian cost function, but this time with a cut-off of two sigma, and in 2D, the cost function could be one of the following two cases. Either there is a large overlap between the non-constant regions of the two cost functions, or there is no overlap between the non-constant regions. In the case of overlap, it is feasible that once splitting occurs, some of the samples of the second distribution will land in a non-constant cost region, thus leading the skill towards the solution. In the case where there is no overlap, the probability of a sample getting a non-constant cost is very small. Without some variability in the costs, the skill will move in a random direction and due to the covariance update methods, will eventually stop, and miss the solution.
  
@@ -296,7 +306,7 @@ Once a new visual class is identified by the supervised learning algorithm, the 
 \begin{figure}[ht]
   \centering
   \includegraphics[width=0.9\columnwidth]{sigma_vs_covar.png}
-  \caption{\label{fig_label} Success rate of finding two ideal actions, when the cost function is non-constant within a range of 2 Sigma, and the samples are taken from a sampling distribution with the the shown covariance. }
+  \caption{\label{fig_sigma_vs_covar} Success rate of finding two ideal actions, when the cost function is non-constant within a range of 2 Sigma, and the samples are taken from a sampling distribution with the the shown covariance. }
   \label{fig:sigmavscovar}
 \end{figure}
 
@@ -320,14 +330,14 @@ The technique of fitting 2D Gaussian distributions is only applicable to situati
 \begin{figure}[ht]
   \centerline{
   \includegraphics[width=1.5\columnwidth]{2d_gaussians.png}}
-  \caption{\label{fig_label} 2D Gaussian Mixture Model performance on idealized data}
+  \caption{\label{fig_2d_gaussians} 2D Gaussian Mixture Model performance on idealized data}
   \label{fig:2Dgaussians}
 \end{figure}
 
 \begin{figure}[ht]
   \centerline{
   \includegraphics[width=1.5\columnwidth]{cluster_costs.png}}
-  \caption{\label{fig_label} Cost Clustering performance on idealized data}
+  \caption{\label{fig_cluster_costs} Cost Clustering performance on idealized data}
   \label{fig:clustercosts}
 \end{figure}
 
@@ -338,7 +348,7 @@ The technique of fitting 2D Gaussian distributions is only applicable to situati
 \begin{figure}[ht]
   \centering
   \includegraphics[width=0.9\columnwidth]{robots.png}
-  \caption{\label{fig_label} Left: tall standing rod. Center: short standing rod. Right: short laying-down rod.
+  \caption{\label{fig_robots} Left: tall standing rod. Center: short standing rod. Right: short laying-down rod.
   \label{fig:robots}
   }
 \end{figure}
@@ -360,7 +370,7 @@ Successful grips between the tall standing rod and the short standing rod are ve
 \begin{figure}[ht]
   \centerline{
   \includegraphics[width=0.9\columnwidth]{6d.png}}
-  \caption{\label{fig_label} Successful policy parameters divided by task. Red is tall standing rod, blue is short standing rod, and green is short laying-down rod.}
+  \caption{\label{fig_6d} Successful policy parameters divided by task. Red is tall standing rod, blue is short standing rod, and green is short laying-down rod.}
   \label{fig:6d}
 \end{figure}
 
@@ -369,7 +379,7 @@ Setup 1 resulted in a split based on the height of the rod. The final action for
 \begin{figure}[ht]
   \centering
   \includegraphics[width=0.8\columnwidth]{distance.png}
-  \caption{\label{fig_label} Comparison of distances between the short standing rod task and the other two tasks in action space.}
+  \caption{\label{fig_distance} Comparison of distances between the short standing rod task and the other two tasks in action space.}
   \label{fig:distance}
 \end{figure}
 
@@ -381,19 +391,19 @@ While the three tasks seem quite close to one another in linear space, it is cle
 
 \section{Related Work}
 
-Daniel, Neumann, and Peters, described an approach at IROS 2012 \cite{daniel} that used relative entropy policy search with hierarchical policy representations. They are not exactly using perceptual classes, but are finding multiple solutions to a single task. For their algorithm, a number of options are predefined, greater than the number of possible optima, and redundant options are deleted as the algorithm runs, with care taken to avoid premature deletion. Their robot playing tetherball example uses a 29-dimensional action space $\appsp$, and imitation learning is used to set the initial parameters of the dynamic motion primitive (DMP). It is not clear if these options all have the same initial policy, or if they are seeded differently. By starting with a large number of redundant options, it is more likely that they will cover the action space and find the possible solutions than if using a single option and then splitting into new options. While this may be feasible for a small number of basis functions, when it is a larger search space, the number of needed initial perceptual classes will increase rapidly. 
+\citet{daniel12learning} described an approach at IROS 2012  that used relative entropy policy search with hierarchical policy representations. They are not exactly using perceptual classes, but are finding multiple solutions to a single task. For their algorithm, a number of options are predefined, greater than the number of possible optima, and redundant options are deleted as the algorithm runs, with care taken to avoid premature deletion. Their robot playing tetherball example uses a 29-dimensional action space $\appsp$, and imitation learning is used to set the initial parameters of the dynamic motion primitive (DMP). It is not clear if these options all have the same initial policy, or if they are seeded differently. By starting with a large number of redundant options, it is more likely that they will cover the action space and find the possible solutions than if using a single option and then splitting into new options. While this may be feasible for a small number of basis functions, when it is a larger search space, the number of needed initial perceptual classes will increase rapidly. 
 
-Calinon used a Gaussian Mixture Model to estimate the structure of the cost function \costf, mapping the cost as a function of action as if it were a probability density function \cite{calinon}. In their experiment, only one task was shown, so accordingly there were no task parameters, and the cost function was reduced to $\costf(\app)$ instead of the full $\costf(\app,\taskp)$. Their experiment uses an action space that is 2-dimensional. In very large and high-dimensional action spaces, it will require a very large number of samples to accurately estimate the cost function's Gaussian Mixture Model. To tackle the problem of finding global optimums with a local search, Calinon employs decaying exploration noise. If the exploration noise is too low or zero, the optimizer would become trapped in the local minima, and not explore the rest of the cost function.
+\citet{calinon13compliant} uses a Gaussian Mixture Model to estimate the structure of the cost function \costf, mapping the cost as a function of action as if it were a probability density function. In their experiment, only one task was shown, so accordingly there were no task parameters, and the cost function was reduced to $\costf(\app)$ instead of the full $\costf(\app,\taskp)$. Their experiment uses an action space that is 2-dimensional. In very large and high-dimensional action spaces, it will require a very large number of samples to accurately estimate the cost function's Gaussian Mixture Model. To tackle the problem of finding global optimums with a local search, \citet{calinon13compliant} employ decaying exploration noise. If the exploration noise is too low or zero, the optimizer would become trapped in the local minima, and not explore the rest of the cost function.
 
-Task-specific representations were explored by Piater et al. [2] in which perception-action solutions were created by interleaving a percept classifier with a reinforcement learner. Effectively this means that while the reinforcement learner is trying to optimize the task at hand, the percept classifier is trying to parse out the perceptual classes. Once the perceptual classes are distinguished, the reinforcement learner will work independently on each of the newly defined perceptual classes. The reinforcement method they used was Markov Decision Processes (MDP). Their method for de-aliasing was to determine if the ideal action $\app$ was converging or not. They measured this convergence by seeing if the difference errors between subsequent iterations of the MDP updates were getting smaller or not. This method is the logical parallel to the Mean Divergence technique I tested. They assume any failure to converge directly is caused by aliasing, and not due to possible inherent instability in the system. They concede that their experiments were run in very small action-spaces $\appsp$, and that scalability may not be feasible. 
+Task-specific representations were explored by~\cite{piater11learning} in which perception-action solutions were created by interleaving a percept classifier with a reinforcement learner. Effectively this means that while the reinforcement learner is trying to optimize the task at hand, the percept classifier is trying to parse out the perceptual classes. Once the perceptual classes are distinguished, the reinforcement learner will work independently on each of the newly defined perceptual classes. The reinforcement method they used was Markov Decision Processes (MDP). Their method for de-aliasing was to determine if the ideal action $\app$ was converging or not. They measured this convergence by seeing if the difference errors between subsequent iterations of the MDP updates were getting smaller or not. This method is the logical parallel to the Mean Divergence technique I tested. They assume any failure to converge directly is caused by aliasing, and not due to possible inherent instability in the system. They concede that their experiments were run in very small action-spaces $\appsp$, and that scalability may not be feasible. 
 
 
 \section{Conclusion}
 
 Online de-aliasing will work when the actions that need to be taken in different contexts are near to each other in action-space. This supports the fact that if the robot is trying to learn two movements that are very different, learning one of them does not give any information on how to do the other. Clustering the costs after a number of similar actions successfully allows the determination of visual classes and provides the advantage of not requiring a bond between the chosen reinforcement algorithm (in this case stochastic optimization) and the chosen supervised learning algorithm (in this case decision trees). In the situations where online de-aliasing works, the actions are very similar and based on the perceptual context. This occurs usually when the action is parameterized by the relevant perceptual feature. Future work would be to combine discretized visual classes that can be formed by online de-aliasing into perceptually parameterized skills.
 
-\section{Bibliography}
-\bibliographystyle{apalike}
+%\bibliographystyle{plain}
+\bibliographystyle{plainnat}
 \bibliography{final_report}
 
 
