@@ -17,6 +17,20 @@ classdef Skill
   
   methods
 
+    function obj = Skill(name, distributions, n_rollouts_per_update)
+      if(nargin == 0)
+        obj = Skill_test_function();
+        return;
+      end
+      if(nargin<3)
+        n_rollouts_per_update = 100;
+      end
+      obj.name = name;
+      obj.distributions = distributions;
+      obj.i_update = 0;
+      obj.K = n_rollouts_per_update;
+    end
+
     function holds = precondition_holds(obj, sensation, percept)
       % Inputs: sensation   raw input from camera
       %         percept     true data to extract from sensation
@@ -250,20 +264,7 @@ classdef Skill
       end
     end
         
-    function obj = Skill(name, distributions, n_rollouts_per_update)
-      if(nargin == 0)
-        obj = Skill_test_function();
-        return;
-      end
-      if(nargin<3)
-        n_rollouts_per_update = 100;
-      end
-      obj.name = name;
-      obj.distributions = distributions;
-      obj.i_update = 0;
-      obj.K = n_rollouts_per_update;
-    end
-    
+
     function visualize_previous_experience(obj, fig)
       figure(fig)
       clf;
