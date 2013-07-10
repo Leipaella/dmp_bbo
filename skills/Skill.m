@@ -83,6 +83,7 @@ classdef Skill
         
         %if rollout buffer is full, update distributions and clear buffer
         if(length(obj.rollout_buffer)>K)
+          fprintf('Buffer is full (%d rollouts). Performing update.\n',K);
           %reshape the rollouts to work nicely with the
           %update_distributions function
           for ii = 1:length(obj.rollout_buffer)
@@ -249,16 +250,18 @@ classdef Skill
       end
     end
         
-    function obj = Skill(name, distributions)
+    function obj = Skill(name, distributions, n_rollouts_per_update)
       if(nargin == 0)
         obj = Skill_test_function();
         return;
       end
+      if(nargin<3)
+        n_rollouts_per_update = 100;
+      end
       obj.name = name;
       obj.distributions = distributions;
       obj.i_update = 0;
-      obj.K = 100;
-
+      obj.K = n_rollouts_per_update;
     end
     
     function visualize_previous_experience(obj, fig)
