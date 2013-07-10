@@ -60,7 +60,10 @@ function task = get_new_task(g, y0)
 
 which = rand(1);
 
-if which>0.5
+if which<0.3
+  viapoint            = [0.45 0.7];
+  viapoint_time_ratio =       0.3;  
+elseif which>0.7
   viapoint            = [0.4 0.7];
   viapoint_time_ratio =       0.3;  
 else
