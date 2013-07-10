@@ -31,6 +31,7 @@ classdef Skill
       obj.i_update = 0;
       obj.K = n_rollouts_per_update;
       obj.n_figs = 0;
+      obj.subskills = [];
     end
 
     function holds = precondition_holds(obj, sensation, percept)
@@ -209,6 +210,7 @@ classdef Skill
              %labels = [1;2];
              %tree = classregtree([percept1;percept2],labels,'method','classification');
              
+             % zzz Very buggy! Objects should be cloned.
              obj.subskills = obj;
              obj.subskills.idx = obj.idx + 1;
              obj.subskills(2) = obj;
