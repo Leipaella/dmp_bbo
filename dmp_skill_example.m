@@ -7,40 +7,32 @@ addpath(genpath('skills/'))
 
 g = [1.0 1.0];
 y0 = [0.0 0.0];
+n_dofs = length(g);
  
 evaluation_external_program = 0;
 task_solver = task_viapoint_solver_dmp(g,y0,evaluation_external_program);
 
+n_basis_functions = 3;
 % Initial means
-theta_init = zeros(2,2);
+theta_init = zeros(1,n_basis_functions);
 % Initial covariance matrix for exploration
-covar_init = 5*eye(size(theta_init,2));
+covar_init = 5*eye(n_basis_functions);
+% Put the above in the distributions structure
+for dd=1:n_dofs
+  distributions_init(dd).mean = theta_init;
+  distributions_init(dd).covar = covar_init;
+end
 
+n_rollouts_per_update = 20;
+skill = Skill('two_viapoint_solver',distributions_init,n_rollouts_per_update);
 
-% Number of updates, roll-outs per update
-n_updates =  25;
-n_samples =  15;
-
-% Weighting method, and covariance update method
-update_parameters.weighting_method    = 'PI-BB'; % {'PI-BB','CMA-ES'}
-update_parameters.eliteness           =      10;
-update_parameters.covar_update        = 'PI-BB'; % {'PI-BB','CMA-ES'}
-update_parameters.covar_full          =       0; % 0 -> diag, 1 -> full
-update_parameters.covar_learning_rate =     0.8; % No lowpass filter
-update_parameters.covar_bounds        =   [0.1 0.01]; 
-
-
-distributions_init.mean = theta_init;
-distributions_init.covar = covar_init;
-
-skill = Skill('two_viapoint_solver',distributions_init);
-i_update = 1;
-
-while(i_update < n_updates)
+% Number of updates
+n_updates =  100;
+goal_learning = 0;
+for i_update=1:n_updates
   task = get_new_task(g, y0);
-  skill = skill.solve_task_instance(task);
-  i_update = i_update + 1;
-
+  %             solve_task_instance(obj,task_instance, task_solver, percept,         goal_learning)
+  skill = skill.solve_task_instance(    task,          task_solver, task.viapoint(1),goal_learning);
 end
 
 end
