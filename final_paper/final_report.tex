@@ -7,6 +7,7 @@
 \usepackage{amsmath}
 \usepackage{bm}
 \usepackage[numbers]{natbib}
+\usepackage{hyperref}
 
 \title{On-line Option Discovery and De-Aliasing for Direct Policy Search}
 \date{July 4, 2013}
@@ -192,7 +193,7 @@ Multiple tasks are present when \eqref{eq:relq} is true since there are two idea
 \covar^{new} & = \sum_{k=1}^{K}P_k(\app_k-\app)(\app_k-\app)^\intercal
 \end{align*}
 
-\subsection{Task Splitting}
+\subsection{Perceptual De-aliasing}
 The following description will be given in the context of the simulated robot which will be discussed further later in the paper, but this algorithm can be equally well applied to performing and action which is defined by a discrete number of parameters. 
 
 The robot is given an initial starting motion through imitation learning. Then the robot will choose K sample actions, in which each action parameter is taken from a normal distribution centered around the imitation learning value and with a predefined initial covariance matrix. When the robot is next required to perform a task, it will record the features present, perform a sample action from the distribution, and record the cost that it incurs. Now after each performed task, the robot will accumulate a roll-out which contains the perception, action parameters, and cost. After K tasks have been seen, the sampling distribution and sampling covariance matrix are updated, biased towards the lower cost actions. Now future action will be drawn from this new sampling distribution. 
@@ -210,38 +211,18 @@ In Figure \ref{fig:1vs2tasks}, the top two plots show the situation where there 
 
 \color{red}Each task has its own cost function. When two tasks are being treated as the same task, some of the samples will be the cost function from one task, and some will be the cost function from the other task. \color{black} When the sampling distribution is at a location where the two cost functions vary, a histogram of the costs will reveal that there are two different clusters. By looking only at the cost distribution, regardless of the action taken, we are assuming that the action taken does not matter. In the case where the covariance matrix for the sampling distribution is small, this serves as a fairly accurate estimation, since all the actions taken in the K samples are very similar. Once the costs are clustered, any supervised learning algorithm can be used to determine which features indicate which cluster. For this work, a classification tree was used. If we had followed in a similar thread as~\citet{piater11learning}, the parallel would have been to determine visual classes by using the covariance matrix. If the covariance matrix remained large, or moved back and forth repeatedly, we could assume this was due to visual class aliasing, but it may also happen by chance, and is dependent on the reinforcement learning algorithm. Instead, by using approximately equivalent actions as if they were the same action, visual classes can be found completely independently of the reinforcement algorithm used. 
 
-Once a new visual class is identified by the supervised learning algorithm, the sampling distribution and covariance is initialized as the sampling distribution of both tasks before the split. If the cost function for both tasks is smooth and has a non-zero gradient at all points, the new optimizer should be able to find the minimum for the new task. However, in real applications, even if the cost function is smooth, there is often only a small range of action parameters near the solution which give any useful feedback. Still using a Gaussian cost function, but this time with a cut-off of two sigma, and in 2D, the cost function could be one of the following two cases. Either there is a large overlap between the non-constant regions of the two cost functions, or there is no overlap between the non-constant regions. In the case of overlap, it is feasible that once splitting occurs, some of the samples of the second distribution will land in a non-constant cost region, thus leading the skill towards the solution. In the case where there is no overlap, the probability of a sample getting a non-constant cost is very small. Without some variability in the costs, the skill will move in a random direction and due to the covariance update methods, will eventually stop, and miss the solution.
- 
-\begin{figure}[ht]
-  \centering
-  \includegraphics[width=0.9\columnwidth]{cost_function.png}
-  \caption{ Possible cost functions for two tasks. Left: likely to find both optimal actions due to overlap. Right: unlikely to find both optimal actions due to large distance between the two optimal actions.}
-  \label{fig:costfunction}
-\end{figure}
-
-\begin{figure}[ht]
-  \centering
-  \includegraphics[width=0.9\columnwidth]{sigma_vs_covar.png}
-  \caption{\label{fig_sigma_vs_covar} Success rate of finding two ideal actions, when the cost function is non-constant within a range of 2 Sigma, and the samples are taken from a sampling distribution with the the shown covariance. }
-  \label{fig:sigmavscovar}
-\end{figure}
-
-Figure \ref{fig:costfunction} shows two examples of this experiment, one in which we would expect both minima to be found (left), and the other (right) which it is unlikely the second minima will be found. The dark circles indicate low-cost areas, and the white background is a constant high-cost area. Splitting will only occur when there is a difference in the cost values of the two tasks for the current action. This means splitting cannot occur in the white portion of the graphs, it can only occur in non-equivalent regions. Therefore, once split, there will be a large gap between the current action and the ideal action for one of the tasks. Figure \ref{fig:sigmavscovar} shows the percentage that both minima are successfully found when varying the sampling covariance and the cost distribution's standard deviation. The likelihood of finding the second skill diminishes when the cost distribution's standard deviation is reduced because the probability of drawing a sample within the 2-sigma radius funnel is lower. In a real life problem, the dimensionality will be very high, the funnel mouth very small, and the search space very large. It is logical to conclude that unless the two skills are very close in all dimensions of the action space, that the probability of finding the second skill is negligible. This conclusion is supported by the results of my experiment.
+Once a new visual class is identified by the supervised learning algorithm, the sampling distribution and covariance is initialized as the sampling distribution of both tasks before the split. If the cost function for both tasks is smooth and has a non-zero gradient at all points, the new optimizer should be able to find the minimum for the new task. 
 
 
-\subsection{Task Splitting Techniques}
+
+
+%\subsection{Task Splitting Techniques}
 
 Once a sufficient number of similar actions were taken, the percept-action-cost data was collected. Since the action was very similar, it could be taken as constant, reducing the complexity to percept-cost. Treating each perceived feature individually yielded a two dimensional work space of feature value vs. cost. 
 
-\emph{2D Gaussian Mixture Model}\newline
+\subsubsection{Gaussian Mixture Models in Cost-Feature Space}
 
-The two dimensions of feature and cost were plotted against each other and then fitted with a Gaussian Mixture Model [4]. This was done in an attempt to see if there were two Gaussians, and whether they were very different in cost-space and percept-space. Upon further reflection, this only works with truly continuous features, and not with binary or classification features, since in this case, the `value' given in the feature space is meaningless as far as its spacial relation to its neighbors.\newline\newline
-\emph{Cluster Costs}\newline
-
-In this technique, the one-dimensional cost vector is clustered in order to see if there are two separate cost functions being seen. If the clusters are significantly different from one another (determined by a Student T-test), then a classification tree is used to find the feature combination that leads to the cluster membership function. Since relevant features are assumed in this experiment, the classification tree is pruned to one layer and then tested to see if it still correctly predicts the membership function to within a defined threshold. If it does, then the feature used is relevant and defines two visual classes with different cost functions. If it does not, then the clustering of the costs indicates that there may be two different cost functions, but that with the given features, it is impossible to distinguish the two tasks. 
-
-The technique of fitting 2D Gaussian distributions is only applicable to situations where the feature is continuous. In Figure \ref{fig:2Dgaussians}, several idealized situations were subjected to this splitting method. The green plots show situations in which a split should ideally be detected, and the red are cases were a split should not be detected. The headings c-clus and f-clus, refer to whether the costs are clusterable and whether the feature itself is clusterable, respectively. When there is a green vertical line on the plot, this indicates that the algorithm decided to split this data, and the location of this line on the x-axis is the cutoff point for the feature that was chosen. For the binary features, 2D Gaussian fitting is not necessary since the variance in the feature space will be zero, thus these situations are decided using a paired Student T-Test with different variances. Figure \ref{fig:clustercosts} shows the results of the clustering algorithm performed on the same set of idealized data. This time the cost must be clusterable in order to find a split, but it will work on categorical data and is more robust. 
-
+The two dimensions of feature and cost were plotted against each other and then fitted with a Gaussian Mixture Model [4]. This was done in an attempt to see if there were two Gaussians, and whether they were very different in cost-space and percept-space. Upon further reflection, this only works with truly continuous features, and not with binary or classification features, since in this case, the `value' given in the feature space is meaningless as far as its spacial relation to its neighbors.
 
 \begin{figure}[ht]
   \centerline{
@@ -249,6 +230,14 @@ The technique of fitting 2D Gaussian distributions is only applicable to situati
   \caption{\label{fig_2d_gaussians} 2D Gaussian Mixture Model performance on idealized data}
   \label{fig:2Dgaussians}
 \end{figure}
+
+
+\subsubsection{Clustering Costs}
+
+In this technique, the one-dimensional cost vector is clustered in order to see if there are two separate cost functions being seen. If the clusters are significantly different from one another (determined by a Student T-test), then a classification tree is used to find the feature combination that leads to the cluster membership function. Since relevant features are assumed in this experiment, the classification tree is pruned to one layer and then tested to see if it still correctly predicts the membership function to within a defined threshold. If it does, then the feature used is relevant and defines two visual classes with different cost functions. If it does not, then the clustering of the costs indicates that there may be two different cost functions, but that with the given features, it is impossible to distinguish the two tasks. 
+
+The technique of fitting 2D Gaussian distributions is only applicable to situations where the feature is continuous. In Figure \ref{fig:2Dgaussians}, several idealized situations were subjected to this splitting method. The green plots show situations in which a split should ideally be detected, and the red are cases were a split should not be detected. The headings c-clus and f-clus, refer to whether the costs are clusterable and whether the feature itself is clusterable, respectively. When there is a green vertical line on the plot, this indicates that the algorithm decided to split this data, and the location of this line on the x-axis is the cutoff point for the feature that was chosen. For the binary features, 2D Gaussian fitting is not necessary since the variance in the feature space will be zero, thus these situations are decided using a paired Student T-Test with different variances. Figure \ref{fig:clustercosts} shows the results of the clustering algorithm performed on the same set of idealized data. This time the cost must be clusterable in order to find a split, but it will work on categorical data and is more robust. 
+
 
 \begin{figure}[ht]
   \centerline{
@@ -258,6 +247,9 @@ The technique of fitting 2D Gaussian distributions is only applicable to situati
 \end{figure}
 
 \section{Results}
+
+\subsection{Viapoint Task}
+
 \subsection{Robot Arm Simulations}
 \subsubsection{Experiment Setup}
 
@@ -304,6 +296,23 @@ While the three tasks seem quite close to one another in linear space, it is cle
 
 \subsection{Global Optima with Local Search}
 
+However, in real applications, even if the cost function is smooth, there is often only a small range of action parameters near the solution which give any useful feedback. Still using a Gaussian cost function, but this time with a cut-off of two sigma, and in 2D, the cost function could be one of the following two cases. Either there is a large overlap between the non-constant regions of the two cost functions, or there is no overlap between the non-constant regions. In the case of overlap, it is feasible that once splitting occurs, some of the samples of the second distribution will land in a non-constant cost region, thus leading the skill towards the solution. In the case where there is no overlap, the probability of a sample getting a non-constant cost is very small. Without some variability in the costs, the skill will move in a random direction and due to the covariance update methods, will eventually stop, and miss the solution.
+ 
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.9\columnwidth]{cost_function.png}
+  \caption{ Possible cost functions for two tasks. Left: likely to find both optimal actions due to overlap. Right: unlikely to find both optimal actions due to large distance between the two optimal actions.}
+  \label{fig:costfunction}
+\end{figure}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.9\columnwidth]{sigma_vs_covar.png}
+  \caption{\label{fig_sigma_vs_covar} Success rate of finding two ideal actions, when the cost function is non-constant within a range of 2 Sigma, and the samples are taken from a sampling distribution with the the shown covariance. }
+  \label{fig:sigmavscovar}
+\end{figure}
+
+Figure \ref{fig:costfunction} shows two examples of this experiment, one in which we would expect both minima to be found (left), and the other (right) which it is unlikely the second minima will be found. The dark circles indicate low-cost areas, and the white background is a constant high-cost area. Splitting will only occur when there is a difference in the cost values of the two tasks for the current action. This means splitting cannot occur in the white portion of the graphs, it can only occur in non-equivalent regions. Therefore, once split, there will be a large gap between the current action and the ideal action for one of the tasks. Figure \ref{fig:sigmavscovar} shows the percentage that both minima are successfully found when varying the sampling covariance and the cost distribution's standard deviation. The likelihood of finding the second skill diminishes when the cost distribution's standard deviation is reduced because the probability of drawing a sample within the 2-sigma radius funnel is lower. In a real life problem, the dimensionality will be very high, the funnel mouth very small, and the search space very large. It is logical to conclude that unless the two skills are very close in all dimensions of the action space, that the probability of finding the second skill is negligible. This conclusion is supported by the results of my experiment.
 
 \section{Related Work}
 
@@ -333,7 +342,7 @@ While the three tasks seem quite close to one another in linear space, it is cle
 
 
 \color{red}
-\subsection{Humanoids'13}
+\subsection*{Humanoids'13}
 
 \citet{ude10taskspecific} learn parameterized skills with a combination of Locally Weighted Regression (for the shape parameters) and Gaussian Process Regression (for the other skill parameters). 
 \citet{silva12learning} use a combination of ISOMAP and Support Vector Machines. 
