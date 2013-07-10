@@ -104,7 +104,7 @@ classdef Skill
 
         %if rollout buffer is full, update distributions and clear buffer
         if(length(obj.rollout_buffer)>K)
-          fprintf('Buffer is full (%d rollouts). Performing update.\n',K);
+          %fprintf('Buffer is full (%d rollouts). Performing update.\n',K);
           %reshape the rollouts to work nicely with the
           %update_distributions function
           for ii = 1:length(obj.rollout_buffer)
@@ -135,7 +135,7 @@ classdef Skill
           %------------------------------------------------------------------
           % Plotting
           if (plot_me)
-            figure(obj.idx)
+            figure(obj.idx+1)
 
             % Plot rollouts if the plot_rollouts function is available
             if (isfield(task_solver,'plot_rollouts'))
@@ -190,14 +190,14 @@ classdef Skill
            
              
            %[percepts'; costs(:,1)']
-           split_decision = false;
+           %split_decision = false;
 
-           if (obj.previous_experience(end).i==80)
-             fprintf('Manual splitting!\n')
-             split_decision = true;
-             split_feature = 1;
-             split_value= 0.5;
-           end
+%            if (obj.previous_experience(end).i==80)
+%              fprintf('Manual splitting!\n')
+%              split_decision = true;
+%              split_feature = 1;
+%              split_value= 0.5;
+%            end
            
            if split_decision
              %create a tree to make the decision we want... hacking matlab

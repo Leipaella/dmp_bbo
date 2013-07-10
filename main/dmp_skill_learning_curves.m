@@ -5,8 +5,8 @@ trial_name = '2_viapoint_tasks';
 fh = figure(10);
 n_skills_disp = 3;
 goal_learning = 0;
-n_samples_per_update = 50;
-n_updates = 30;
+n_samples_per_update = 30;
+n_updates = 50;
 disp_n_skills = 3;
 n_dims = 1;
 
@@ -44,6 +44,7 @@ skill_list(1).skill = obj;
 skill_list(1).history = [];
 
 
+[tasks percepts n_tasks] = get_new_task(g,y0);
 
 wh = waitbar(0,'Running Simulations');
 t1 = clock;
@@ -52,9 +53,9 @@ while i_update < n_updates
   %--------------------------------------------------------------------------
   % Generate a task and percept
   
-  %p = randperm(n_tasks);
-  %r = ceil(n_tasks*rand(1,n_samples_per_update));
-  %r = sort(r);
+  p = randperm(n_tasks);
+  r = ceil(n_tasks*rand(1,n_samples_per_update));
+  r = sort(r);
   
   for i_instance = 1:n_samples_per_update
   
@@ -71,8 +72,7 @@ while i_update < n_updates
       new_title = sprintf('%2dh %2dm %2ds remaining...',hours,mins,secs);
       waitbar(fraction,wh,new_title);
       
-      %task = tasks(r(i_instance));
-      task = get_new_task(g,y0);
+      task = tasks(r(i_instance));
       %percept = percepts(r(i_instance),:);
       percept = task.viapoint(1);
 
@@ -112,7 +112,9 @@ while i_update < n_updates
           rows = disp_n_skills;
           cols = 2*length(percept);
           t = meshgrid(1:cols:rows*cols,1:cols/2)'-1 + meshgrid(1:cols/2,1:rows);
+          clf
           subplot(rows,cols,t(:));
+          
           hold on;
           %n_dims  = length(c_skill.distributions.mean);
           plot_n_dim = min(n_dims,2);
@@ -135,6 +137,9 @@ while i_update < n_updates
           %ylabel('Goal y-coordinate');
           %skill_list(ii).history(end+1).theta = theta;
           %skill_list(ii).history(end).covar = covar;
+          samples = generate_samples(skill_list(ii).skill.distributions,1,1);
+            cost_vars = task_solver.perform_rollouts(task,samples);
+            task_solver.plot_rollouts(gca,task,cost_vars)
           drawnow;
 
         end
@@ -176,7 +181,7 @@ while i_update < n_updates
           i_first = find(split_decision,1,'first');
           if ~isempty(i_first)
             [sub1 sub2] = copy_and_change(skill_list(ii),split_feature(i_first),split_values{i_first});
-
+            pause
             skill_list(end+1).skill = sub1.skill;
             skill_list(end).conditions = sub1.conditions;
             skill_list(end).history = skill_list(ii).history;
@@ -257,12 +262,28 @@ timestr = datestr(clock);
 timestr(timestr == ' ') = '_';
 timestr(timestr == ':') = '-';
 
-for ii = 1:length(skill_list)
-    figure
-    plotlearninghistory(skill_list(ii).skill.learning_history);
+figure
+for ii = 1:length(tasks)
+    hold on
+    task = tasks(ii);
+    plot_n_dofs = min(n_dofs,3);
+    if (isfield(task_solver,'plot_rollouts'))
+      subplot(plot_n_dofs,4,1:4:plot_n_dofs*4)
+      percept = task.viapoint(1);
+      indices = find_applicable_skills(percept, skill_list);
+      first = min(indices);
+      skill = skill_list(first).skill;
+      samples = generate_samples(skill.distributions,1,1);
+      cost_vars = task_solver.perform_rollouts(task,samples);
+      task_solver.plot_rollouts(gca,task,cost_vars)
+      title('Visualization of roll-outs')
+    end
+    plotlearninghistory(skill.learning_history);
 end
 
 
-save(timestr,'percepts','tasks','task_solver','skill_list','n_tasks','n_samples_per_update');
+
+
+%save(timestr,'percepts','tasks','task_solver','skill_list','n_tasks','n_samples_per_update');
 
 
