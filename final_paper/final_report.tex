@@ -79,7 +79,9 @@ The experiments that were performed applied stochastic optimization and a percep
 \section{Formalization}
 %policy
 
-\subsection{Parameterized Policies}
+\subsection{Policies}
+
+\paragraph{Parameterized Policies}
 
 \begin{align}
 \label{eq:policy}\pi(\act|\sta,\app) &\equiv  \pi_{\app}(\act|\sta) & \app \in \appsp \\
@@ -88,38 +90,8 @@ The experiments that were performed applied stochastic optimization and a percep
 
 Eq \ref{eq:policy} defines a policy which maps states to actions and is parameterized by $\app$. The action space is the parameters needed to complete the action. It can be the goal position, or the weights of a Dynamic Movement Primitive (DMP).
 
-\subsubsection{Policy Improvement through Stochastic Optimization}
 
-\begin{align}
-\costf\mbox{: } &\label{eq:cost} \appsp \mapsto \mathbb{R}&\mbox{Cost function}
-\end{align}
-
-Policy improvement: find \app that minimizes \costf.
-
-Stochastic optimization general method for solving black-box opimization problems. BBO: nothing is known about \costf. One approach: treat policy improvement as BBO, apply stochastic optimization.
-
-When the parameter $\app$ in Eq. \ref{eq:policy} is unknown or needs to be optimized, it can be represented instead using a mean and variance matrix to give a normal distribution for the value of $\app$. The policy parameter vector is then chosen from a normal distribution with the mean $\app_\mu$ and the variance $\covar$ shown in Eq. \ref{eq:opt}.
-
-\color{red}Explain stochastic optimization here \color{black}
-
-
-\begin{align*}
-\app_{k=1\dots K} & {\sim}\mathcal{N}({\app_\mu},{\covar})\\
-\forall k~J_k & = J(\app_k)\\
-\forall k~P_k & = \mbox{``lower cost} \Rightarrow \mbox{higher weight''}\\
-\app^{new} & = \sum_{k=1}^{K} P_k \app_k\\
-\covar^{new} & = \sum_{k=1}^{K}P_k(\app_k-\app)(\app_k-\app)^\intercal
-\end{align*}
-
-Instead of having the parameters $\app_\mu$ and $\covar$ as parameters of the optimization algorithm, as is customary, these parameters are stored in the policy itself. 
-
-\begin{align}
-\label{eq:opt}\pi(\act|\sta,\app_\mu,\covar)
-\end{align}
-
-
-
-\subsection{Parameterized Policies}
+\paragraph{Parameterized Skills}
 
 There arise many situations where the  policy parameter vector $\app$ is dependent on the context. The context is the set of relevant task parameters $\taskp$ which have an influence on the values of the policy parameters. Task parameters, \emph{\taskpsp}, define a task. In the case of application to manipulation, these parameters could be the position and orientation of the object, the object's geometry, the object's color, and any number of other defining properties. These task parameters are constant in time and do not include any robot properties. 
 
@@ -132,120 +104,51 @@ To define the relationship between task parameters and policy parameters, a new 
 
 Parameterized policies use regression techniques to map the relevant task parameter vector $\taskp$ to the chosen policy parameter vector $\app$.
 
-\color{red} Explain Gennaro's work here \color{black}
+
+\paragraph{Option Policies}
+
+When there are a discrete number of options for policy parameters, classification is used instead of regression for the gating policy. \citet{daniel12learning} ran experiments using this two-level policy structure with the goal of finding multiple action policy solutions to a single task. The task parameters used corresponded directly with which option to take. 
+
+\subsection{Policy Improvement through Parameter Exploration}
+
+
+\begin{align}
+\costf\mbox{: } &\label{eq:cost} \appsp \mapsto \mathbb{R}&\mbox{Cost function}
+\end{align}
+
+Policy improvement: find \app that minimizes \costf.
+
+Stochastic optimization general method for solving black-box opimization problems. BBO: nothing is known about \costf. One approach: treat policy improvement as BBO, apply stochastic optimization.
+
+Stochastic policy:
+\begin{align}
+\label{eq:opt}\pi(\act|\sta,\app_\mu,\covar)
+\end{align}
+
+
+When the parameter $\app$ in Eq. \ref{eq:policy} is unknown or needs to be optimized, it can be represented instead using a mean and variance matrix to give a normal distribution for the value of $\app$. The policy parameter vector is then chosen from a normal distribution with the mean $\app_\mu$ and the variance $\covar$ shown in Eq. \ref{eq:opt}.
+
+
+\paragraph{Stochastic Optimization for Parameterized Skills}
+
 
 \begin{align}
 \costf\mbox{: } &\label{eq:cost_task} \appsp \times \taskpsp \mapsto \mathbb{R}&\mbox{Cost function}
 \end{align}
 
 
-
-%\newcommand{\polg}   {\ensuremath{\pi^g}}
-%\newcommand{\pol}    {\ensuremath{\pi}}
-%\newcommand{\act}    {\ensuremath{\mathbf{a}}}
-%\newcommand{\sta}    {\ensuremath{\mathbf{s}}}
-%\newcommand{\appsp}  {\ensuremath{\Theta}}
-%\newcommand{\feat}   {\ensuremath{f}}
-%\newcommand{\featsp} {\ensuremath{\emph{F}}}
-%\newcommand{\costsp} {\ensuremath{R}}
-%\newcommand{\taskp}  {\ensuremath{\mathbf{q}}}
-%\newcommand{\taskpv} {\ensuremath{q}}
-%\newcommand{\costf}  {\ensuremath{J}}
-%\newcommand{\obsm}   {\ensuremath{O}}
-%\newcommand{\app}    {\ensuremath{\bm{\theta}}}
-%\newcommand{\taskpsp}{\ensuremath{Q}}
-%\newcommand{\featv}  {\ensuremath{\mathbf{f}}}
-%\newcommand{\covar}  {\ensuremath{\bm{\Sigma}}}
-
-\begin{table}[ht]
-  \centering
-\begin{scriptsize}
-\begin{tabular}{|l|l|rl|rl|rl|}
-%-------------------------------------------------------------------------
-%-------------------------------------------------------------------------
-\hline
-\multicolumn{8}{|l|}{\em Parameterized skills: Two-step methods}\\
-%-------------------------------------------------------------------------
-This report                          
-& $\pol(\act|\sta,\app)$ 
-& {\bf task pars}            & \taskp 
-& {\bf policy pars}          & \app 
-& {\bf policy pars function} & $\polg: \taskpsp \mapsto \appsp$ ($\polg: \taskp \mapsto \app$)\\  
-%-------------------------------------------------------------------------
-\citet{ude10taskspecific}      
-& not specified
-& task pars            & $\mathbf{q}$ 
-& policy pars          & $[\mathbf{w},\tau,g]$ 
-& function             & $\mathbf{G}: \mathbf{q} \mapsto [\mathbf{w},\tau,g]$ \\  
-%-------------------------------------------------------------------------
-\citet{kupcsik13dataefficient} 
-& $\pi(\mathbf{u}|\mathbf{x},\mathbf{\omega})$ 
-& context              & $\mathbf{s}$
-& policy pars          & $\mathbf{\omega}$ 
-& upper level policy   & $\pi(\mathbf{\omega}|\mathbf{s})$ \\  
-%-------------------------------------------------------------------------
-\citet{silva12learning}        
-& $\pi_\mathbf{\theta}$
-& task pars            & $\mathbf{\tau}$ 
-& policy pars          & ${\theta}$
-& parameterized skill  & $\Theta: T \mapsto \mathbb{R}^N$ ($\Theta: \mathbf{\tau} \mapsto \mathbf{\theta}$)\\
-%-------------------------------------------------------------------------
-%-------------------------------------------------------------------------
-\hline
-\multicolumn{8}{|l|}{\em Parameterized skills: One-step methods}\\
-%-------------------------------------------------------------------------
-\citet{matsubara11learning}    
-& $f(x,\mathbf{s}; \mathbf{W})$
-& style pars           & $\mathbf{s}$ 
-& \multicolumn{2}{c|}{N.A.}   
-& \multicolumn{2}{c|}{N.A.} \\  
-%-------------------------------------------------------------------------
-\citet{stulp13learning}        
-& $h_\mathbf{u}(s,\mathbf{q})$
-& task pars            & $\mathbf{q}$ 
-& \multicolumn{2}{c|}{N.A.}   
-& \multicolumn{2}{c|}{N.A.} \\  
-%-------------------------------------------------------------------------
-%-------------------------------------------------------------------------
-\hline
-\multicolumn{8}{|l|}{\em Option policies}\\
-%-------------------------------------------------------------------------
-\citet{daniel12learning}    
-& $\pi(\mathbf{a}|\mathbf{s},o)$
-& \multicolumn{2}{c|}{N.A. ($\approx\mathbf{s}$)}   
-& option           & $o$ 
-& gating network   & $\pi(o|\mathbf{s})$ \\  
-%-------------------------------------------------------------------------
-%-------------------------------------------------------------------------
-\end{tabular}
-\end{scriptsize}
-  \caption{\label{tab_nomenclature} Different nomenclature in related work on parameterized skills with trajectory-based policy representations.}
-\end{table}
-
-\subsubsection{Stochastic Optimization for Parameterized Policies}
-
 \begin{align}
 \label{eq:gating_par}\polg(\app_\mu,\covar|\taskp)
 \end{align}
 
-\citet{kupcsik13dataefficient}
 
-\citet{marin12towards}
-
-
-
-\subsection{Option Policies}
-
-When there are a discrete number of options for policy parameters, classification is used instead of regression for the gating policy. \citet{daniel12learning} ran experiments using this two-level policy structure with the goal of finding multiple action policy solutions to a single task. The task parameters used corresponded directly with which option to take. 
-
-\subsubsection{Stochastic Optimization for Option Policies}
+\paragraph{Stochastic Optimization for Option Policies}
 
 Basic idea: use data gathered during stochastic optimization to discover option policies
 
 This is your work. See later.
 
-
-\section{Perceptual De-aliasing}
+\subsection{Perceptual De-aliasing}
 
 \color{red}Combine the use of a gating policy (decision trees) and an action policy that uses stochastic optimization. Get the data from the stochastic optimization updates. Also we use features not q. Cite \citet{piater11learning}\color{black}
 
@@ -275,6 +178,19 @@ It is necessary to define the idea of relevance: what makes a feature or a task 
 Multiple tasks are present when \eqref{eq:relq} is true since there are two ideal actions. Therefore there are multiple tasks present if and only if there is at least one relevant task parameter. If a difference in one or more of the features can be detected when the task parameter changes, then it will be possible to perceptually de-alias the two tasks. Since the goal is to de-alias in an online fashion, the ideal action, $\argmin{\app}\costf(\app,\taskp)$, will not be known at the moment of de-aliasing. Instead, the value of the cost function $\costf$ is used as an indicator by how different it is for different values of the task parameter in question \eqref{eq:relq} as to whether or not the ideal action will be different in the two cases. Sometimes this will lead to overzealous de-aliasing, but perceptual classes can easily be merged again if it is discovered the same actions are being performed.
 
 \section{Methods}
+
+\subsection{Stochastic Optimization: Covariance Matrix Adaptation}
+
+\color{red}Explain stochastic optimization here \color{black}
+
+
+\begin{align*}
+\app_{k=1\dots K} & {\sim}\mathcal{N}({\app_\mu},{\covar})\\
+\forall k~J_k & = J(\app_k)\\
+\forall k~P_k & = \mbox{``lower cost} \Rightarrow \mbox{higher weight''}\\
+\app^{new} & = \sum_{k=1}^{K} P_k \app_k\\
+\covar^{new} & = \sum_{k=1}^{K}P_k(\app_k-\app)(\app_k-\app)^\intercal
+\end{align*}
 
 \subsection{Task Splitting}
 The following description will be given in the context of the simulated robot which will be discussed further later in the paper, but this algorithm can be equally well applied to performing and action which is defined by a discrete number of parameters. 
@@ -390,6 +306,83 @@ While the three tasks seem quite close to one another in linear space, it is cle
 
 
 \section{Related Work}
+
+
+\citet{kupcsik13dataefficient}
+
+\citet{marin12towards}
+
+
+\color{red} Explain Gennaro's work here \color{black}
+
+
+\begin{table}[ht]
+  \centering
+\begin{scriptsize}
+\begin{tabular}{|l|l|rl|rl|rl|}
+%-------------------------------------------------------------------------
+%-------------------------------------------------------------------------
+\hline
+\multicolumn{8}{|l|}{\em Parameterized skills: Two-step methods}\\
+%-------------------------------------------------------------------------
+This report                          
+& $\pol(\act|\sta,\app)$ 
+& {\bf task pars}            & \taskp 
+& {\bf policy pars}          & \app 
+& {\bf policy pars function} & $\polg: \taskpsp \mapsto \appsp$ ($\polg: \taskp \mapsto \app$)\\  
+%-------------------------------------------------------------------------
+\citet{ude10taskspecific}      
+& not specified
+& task pars            & $\mathbf{q}$ 
+& policy pars          & $[\mathbf{w},\tau,g]$ 
+& function             & $\mathbf{G}: \mathbf{q} \mapsto [\mathbf{w},\tau,g]$ \\  
+%-------------------------------------------------------------------------
+\citet{kupcsik13dataefficient} 
+& $\pi(\mathbf{u}|\mathbf{x},\mathbf{\omega})$ 
+& context              & $\mathbf{s}$
+& policy pars          & $\mathbf{\omega}$ 
+& upper level policy   & $\pi(\mathbf{\omega}|\mathbf{s})$ \\  
+%-------------------------------------------------------------------------
+\citet{silva12learning}        
+& $\pi_\mathbf{\theta}$
+& task pars            & $\mathbf{\tau}$ 
+& policy pars          & ${\theta}$
+& parameterized skill  & $\Theta: T \mapsto \mathbb{R}^N$ ($\Theta: \mathbf{\tau} \mapsto \mathbf{\theta}$)\\
+%-------------------------------------------------------------------------
+%-------------------------------------------------------------------------
+\hline
+\multicolumn{8}{|l|}{\em Parameterized skills: One-step methods}\\
+%-------------------------------------------------------------------------
+\citet{matsubara11learning}    
+& $f(x,\mathbf{s}; \mathbf{W})$
+& style pars           & $\mathbf{s}$ 
+& \multicolumn{2}{c|}{N.A.}   
+& \multicolumn{2}{c|}{N.A.} \\  
+%-------------------------------------------------------------------------
+\citet{stulp13learning}        
+& $h_\mathbf{u}(s,\mathbf{q})$
+& task pars            & $\mathbf{q}$ 
+& \multicolumn{2}{c|}{N.A.}   
+& \multicolumn{2}{c|}{N.A.} \\  
+%-------------------------------------------------------------------------
+%-------------------------------------------------------------------------
+\hline
+\multicolumn{8}{|l|}{\em Option policies}\\
+%-------------------------------------------------------------------------
+\citet{daniel12learning}    
+& $\pi(\mathbf{a}|\mathbf{s},o)$
+& \multicolumn{2}{c|}{N.A. ($\approx\mathbf{s}$)}   
+& option           & $o$ 
+& gating network   & $\pi(o|\mathbf{s})$ \\  
+%-------------------------------------------------------------------------
+%-------------------------------------------------------------------------
+\end{tabular}
+\end{scriptsize}
+  \caption{\label{tab_nomenclature} Different nomenclature in related work on parameterized skills with trajectory-based policy representations.}
+\end{table}
+
+
+
 
 \citet{daniel12learning} described an approach at IROS 2012  that used relative entropy policy search with hierarchical policy representations. They are not exactly using perceptual classes, but are finding multiple solutions to a single task. For their algorithm, a number of options are predefined, greater than the number of possible optima, and redundant options are deleted as the algorithm runs, with care taken to avoid premature deletion. Their robot playing tetherball example uses a 29-dimensional action space $\appsp$, and imitation learning is used to set the initial parameters of the dynamic motion primitive (DMP). It is not clear if these options all have the same initial policy, or if they are seeded differently. By starting with a large number of redundant options, it is more likely that they will cover the action space and find the possible solutions than if using a single option and then splitting into new options. While this may be feasible for a small number of basis functions, when it is a larger search space, the number of needed initial perceptual classes will increase rapidly. 
 
