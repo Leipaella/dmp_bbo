@@ -1,4 +1,4 @@
-function dmp_skill_example
+function [skill] = dmp_skill_example
 
 addpath dynamicmovementprimitive
 addpath(genpath('evolutionaryoptimization/'))
@@ -20,12 +20,12 @@ for dd=1:n_dofs
   distributions_init(dd).covar = 5*eye(n_basis_functions);
 end
 
-n_rollouts_per_update = 20;
+n_rollouts_per_update = 16;
 skill = Skill('two_viapoint_solver',distributions_init,n_rollouts_per_update);
 skill.n_figs = 2;
 
 % Number of updates
-n_updates =  100;
+n_updates =  500;
 goal_learning = 0;
 for i_update=1:n_updates
   task = get_new_task(g, y0);
