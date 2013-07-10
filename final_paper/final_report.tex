@@ -307,11 +307,43 @@ While the three tasks seem quite close to one another in linear space, it is cle
 
 \section{Related Work}
 
+\subsection{Reinforcement Learning of Parameterized Policies}
 
+\citet{stulp12reinforcement}
+
+\subsection{Reinforcement Learning of Parameterized Skills}
+
+\citet{stulp13learning}
 \citet{kupcsik13dataefficient}
+\citet{marin12towards}
+\citet{matsubara11learning}
+
+\subsection{Reinforcement Learning of Option Policies}
+
+\citet{daniel12learning}
+
+\subsection{Perceptual De-Aliasing in Reinforcement Learning}
+
+\citet{chrisman92reinforcement}
+\citet{mccallum95instancebased}
+\citet{piater11learning}
+
 
 \citet{marin12towards}
 
+
+\color{red}
+\subsection{Humanoids'13}
+
+\citet{ude10taskspecific} learn parameterized skills with a combination of Locally Weighted Regression (for the shape parameters) and Gaussian Process Regression (for the other skill parameters). 
+\citet{silva12learning} use a combination of ISOMAP and Support Vector Machines. 
+An interesting aspect of \cite{silva12learning} is that different regressors are learned for different parts of the parameter space, thus avoiding the problem of averaging across multiple skill parameters that achieve the same task. For instance, reaching around an obstacle will succeed  by going around it to the left \emph{or} right, but the average of these two motions will not succeed. 
+
+\citet{matsubara11learning} also move the task parameters (which they call `style parameter') into the function approximator of a DMP. An interesting aspect of~\cite{matsubara11learning} is that task parameters are not provided, but rather extracted from the data itself through principal components analysis.
+
+\citet{kober10reinforcement} present an altogether different approach for learning to map task parameters to DMP meta-parameters based on cost-regularized kernel regression. They consider the shape parameters to be fixed, and learn only the meta-parameters.
+
+\color{black}
 
 \color{red} Explain Gennaro's work here \color{black}
 
