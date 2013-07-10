@@ -1,19 +1,25 @@
 
-function task = get_new_task(g, y0)
+function [tasks, percepts, ntasks] = get_new_task(g, y0)
 
-    which = rand(1);
+ntasks = 2;
 
-    if which<0.3
-      viapoint            = [0.45 0.7];
-      viapoint_time_ratio =       0.3;  
-    elseif which>0.7
-      viapoint            = [0.4 0.7];
-      viapoint_time_ratio =       0.3;  
-    else
-      viapoint            = [0.7 0.4];
-      viapoint_time_ratio =       0.3; 
-    end
+task = task_viapoint([0.4 0.7],0.3);
+task.id = 1;
+tasks(1) = task;
+percepts(1,1) = 0;
+percepts(1,2) = 0;
 
-    task = task_viapoint(viapoint,viapoint_time_ratio);
+
+task = task_viapoint([0.7 0.4],0.3);
+task.id = 2;
+tasks(2) = task;
+percepts(2,1) = 1;
+percepts(2,2) = 0;
+
+%task = task_viapoint([0.45 0.7],0.3);
+%task.id = 3;
+%tasks(3) = task;
+%percepts(3,1) = 1;
+%percepts(3,2) = 1;
 
 end
