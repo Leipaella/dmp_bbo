@@ -210,13 +210,12 @@ classdef Skill
              %labels = [1;2];
              %tree = classregtree([percept1;percept2],labels,'method','classification');
              
-             % zzz Very buggy! Objects should be cloned.
-             obj.subskills = obj;
-             obj.subskills.idx = obj.idx + 1;
-             obj.subskills(2) = obj;
-             obj.subskills(2).idx = obj.idx + 2;
+             obj.subskills          = clone(obj);
+             obj.subskills.idx      = obj.idx + 1;
+             obj.subskills(2)       = clone(obj);
+             obj.subskills(2).idx   = obj.idx + 2;
              obj.tree.split_feature = split_feature;
-             obj.tree.split_value = split_value;
+             obj.tree.split_value   = split_value;
              
              
            end
