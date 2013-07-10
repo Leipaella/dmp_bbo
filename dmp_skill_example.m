@@ -12,15 +12,12 @@ n_dofs = length(g);
 evaluation_external_program = 0;
 task_solver = task_viapoint_solver_dmp(g,y0,evaluation_external_program);
 
+% Number of basis functions in the DMP
 n_basis_functions = 3;
-% Initial means
-theta_init = zeros(1,n_basis_functions);
-% Initial covariance matrix for exploration
-covar_init = 5*eye(n_basis_functions);
-% Put the above in the distributions structure
+% Initialize the distributions
 for dd=1:n_dofs
-  distributions_init(dd).mean = theta_init;
-  distributions_init(dd).covar = covar_init;
+  distributions_init(dd).mean  = zeros(1,n_basis_functions);
+  distributions_init(dd).covar = 5*eye(n_basis_functions);
 end
 
 n_rollouts_per_update = 20;
