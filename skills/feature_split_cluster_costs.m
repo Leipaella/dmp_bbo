@@ -147,7 +147,7 @@ for i_feature = 1:n_features
     [max_correct, i_correct] = min(err);
     if max_correct < 0.05
       %this cluster is predictable!
-      disp(['In feature ' num2str(i_feature) ' cluster ' num2str(i_correct) ' is predictable']);
+      %disp(['In feature ' num2str(i_feature) ' cluster ' num2str(i_correct) ' is predictable']);
     end
     
     for ii = 1:max(idx)
@@ -190,9 +190,6 @@ end
 [pmin imin] = min(p_arr);
 
 %see if the split values are in between min and max feature values
-if pmin < p_thresh
-  disp('SPLITTING!!');
-end
 
 in_range = any(split_val{imin} > min(percepts(:,imin)) & split_val{imin} < max(percepts(:,imin)));
 
@@ -203,7 +200,7 @@ if pmin < p_thresh && in_range
   split_decision = true;
   split_feature = imin;
   split_value = split_val{imin};
-  
+  disp(['SPLITTING: feature ' num2str(split_feature)]);
 else
   split_decision = false;
   split_feature = 0;

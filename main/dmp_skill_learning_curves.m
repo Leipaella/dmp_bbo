@@ -3,11 +3,11 @@ close all;
 clearvars;
 trial_name = '2_viapoint_tasks';
 fh = figure(10);
-n_skills_disp = 3;
+n_skills_disp = 4;
 goal_learning = 0;
-n_samples_per_update = 30;
-n_updates = 50;
-disp_n_skills = 3;
+n_samples_per_update = 100;
+n_updates = 100;
+disp_n_skills = 4;
 n_dims = 1;
 
 g = [1.0 1.0];
@@ -73,8 +73,8 @@ while i_update < n_updates
       waitbar(fraction,wh,new_title);
       
       task = tasks(r(i_instance));
-      %percept = percepts(r(i_instance),:);
-      percept = task.viapoint(1);
+      percept = percepts(r(i_instance),:);
+      %percept = task.viapoint(1);
 
 
 
@@ -114,7 +114,8 @@ while i_update < n_updates
           t = meshgrid(1:cols:rows*cols,1:cols/2)'-1 + meshgrid(1:cols/2,1:rows);
           clf
           subplot(rows,cols,t(:));
-          
+          hold off;
+          plot(0,0);
           hold on;
           %n_dims  = length(c_skill.distributions.mean);
           plot_n_dim = min(n_dims,2);
@@ -181,7 +182,7 @@ while i_update < n_updates
           i_first = find(split_decision,1,'first');
           if ~isempty(i_first)
             [sub1 sub2] = copy_and_change(skill_list(ii),split_feature(i_first),split_values{i_first});
-            pause
+            
             skill_list(end+1).skill = sub1.skill;
             skill_list(end).conditions = sub1.conditions;
             skill_list(end).history = skill_list(ii).history;
@@ -263,16 +264,12 @@ timestr(timestr == ' ') = '_';
 timestr(timestr == ':') = '-';
 
 figure
-for ii = 1:length(tasks)
+for ii = 1:length(skill_list)
     hold on
-    task = tasks(ii);
     plot_n_dofs = min(n_dofs,3);
     if (isfield(task_solver,'plot_rollouts'))
       subplot(plot_n_dofs,4,1:4:plot_n_dofs*4)
-      percept = task.viapoint(1);
-      indices = find_applicable_skills(percept, skill_list);
-      first = min(indices);
-      skill = skill_list(first).skill;
+      skill = skill_list(ii).skill;
       samples = generate_samples(skill.distributions,1,1);
       cost_vars = task_solver.perform_rollouts(task,samples);
       task_solver.plot_rollouts(gca,task,cost_vars)
@@ -283,6 +280,13 @@ end
 
 
 
+
+for ii = 1:length(tasks)
+    task = tasks(ii);
+    subplot(plot_n_dofs,4,1:4:plot_n_dofs*4)
+    hold on
+    plot(task.viapoint(1),task.viapoint(2),'og')
+end
 
 %save(timestr,'percepts','tasks','task_solver','skill_list','n_tasks','n_samples_per_update');
 

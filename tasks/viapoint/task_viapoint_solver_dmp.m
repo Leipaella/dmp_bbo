@@ -50,7 +50,7 @@ task_solver.theta_init = zeros(2,2);
     color = 0.5*color;
     plot(x(1,viapoint_time_step),y(1,viapoint_time_step),'o','Color',color,'LineWidth',linewidth)
     plot(x(1,:)',y(1,:)','Color',color,'LineWidth',linewidth)
-    plot([ x(1,viapoint_time_step) task.viapoint(1)] ,[y(1,viapoint_time_step) task.viapoint(2)],'Color',color,'LineWidth',linewidth)
+    %plot([ x(1,viapoint_time_step) task.viapoint(1)] ,[y(1,viapoint_time_step) task.viapoint(2)],'Color',color,'LineWidth',linewidth)
 
     plot(task.viapoint(1),task.viapoint(2),'og')
     

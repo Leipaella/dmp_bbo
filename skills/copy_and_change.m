@@ -8,9 +8,11 @@ parent = skill_entry.skill;
 subskill1 = Skill(strcat(parent.name,'_sub1'),parent.distributions);
 subskill1.learning_history = parent.learning_history;
 subskill1.n_figs = parent.n_figs;
+subskill1.K = parent.K;
 subskill2 = Skill(strcat(parent.name,'_sub2'),parent.distributions);
 subskill2.learning_history = parent.learning_history;
 subskill2.n_figs = parent.n_figs;
+subskill2.K = parent.K;
 
 %create the two conditions
 cond1 = {};
