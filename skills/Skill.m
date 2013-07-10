@@ -29,6 +29,7 @@ classdef Skill
       obj.distributions = distributions;
       obj.i_update = 0;
       obj.K = n_rollouts_per_update;
+      obj.n_figs = 0;
     end
 
     function holds = precondition_holds(obj, sensation, percept)
@@ -92,7 +93,9 @@ classdef Skill
         %put results in rollout buffer
         rollout.dmp_parameters_distributions = obj.distributions;
         rollout.dmp_parameters_sample = samples;
+        rollout.cost_vars = cost_vars;
         rollout.cost = costs;
+        rollout.task_instance = task_instance;
         obj.rollout_buffer{end+1} = rollout;
         
         %if rollout buffer is full, update distributions and clear buffer
@@ -124,6 +127,33 @@ classdef Skill
             obj.learning_history(end+1) = summary;
           end
           plot_me = 1; %turn plotting on for the distributions
+          %------------------------------------------------------------------
+          % Plotting
+          if (plot_me)
+            figure(1)
+
+            % Very difficult to see anything in the plots for many dofs
+            plot_n_dofs = min(n_dofs,3);
+
+            % Plot rollouts if the plot_rollouts function is available
+            if (isfield(task_solver,'plot_rollouts'))
+              subplot(plot_n_dofs,4,1:4:plot_n_dofs*4)
+              cla
+              for ii = 1:length(obj.rollout_buffer)
+                task_solver.plot_rollouts(gca,obj.rollout_buffer{ii}.task_instance,obj.rollout_buffer{ii}.cost_vars)
+                hold on
+              end
+              title('Visualization of roll-outs')
+            end
+
+            % Plot learning histories
+            plotlearninghistory(obj.learning_history);
+            if (isfield(task_instance,'plotlearninghistorycustom'))
+              figure(11)
+              task_instance.plotlearninghistorycustom(obj.learning_history)
+            end
+          end
+
           
           %empty the rollout buffer
           obj.rollout_buffer = [];

@@ -31,7 +31,7 @@ task_solver.theta_init = zeros(2,2);
 %addpath dynamicmovementprimitive/
 
   function plot_rollouts_viapoint_solver_dmp(axes_handle,task,cost_vars)
-    cla(axes_handle)
+    %cla(axes_handle)
     
     x = squeeze(cost_vars(:,:,1));
     y = squeeze(cost_vars(:,:,4));
@@ -46,7 +46,7 @@ task_solver.theta_init = zeros(2,2);
     my_ones = ones(size(x(2:end,viapoint_time_step)));
     plot([ x(2:end,viapoint_time_step) task.viapoint(1)*my_ones]' ,[y(2:end,viapoint_time_step) task.viapoint(2)*my_ones]','Color',color,'LineWidth',linewidth)
 
-    linewidth = 2;
+    linewidth = 1;
     color = 0.5*color;
     plot(x(1,viapoint_time_step),y(1,viapoint_time_step),'o','Color',color,'LineWidth',linewidth)
     plot(x(1,:)',y(1,:)','Color',color,'LineWidth',linewidth)

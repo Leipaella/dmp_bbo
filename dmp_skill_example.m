@@ -13,7 +13,7 @@ evaluation_external_program = 0;
 task_solver = task_viapoint_solver_dmp(g,y0,evaluation_external_program);
 
 % Number of basis functions in the DMP
-n_basis_functions = 3;
+n_basis_functions = 2;
 % Initialize the distributions
 for dd=1:n_dofs
   distributions_init(dd).mean  = zeros(1,n_basis_functions);
@@ -22,6 +22,7 @@ end
 
 n_rollouts_per_update = 20;
 skill = Skill('two_viapoint_solver',distributions_init,n_rollouts_per_update);
+skill.n_figs = 2;
 
 % Number of updates
 n_updates =  100;
