@@ -45,7 +45,8 @@
 \newcommand{\featsp} {\mymath{\emph{F}}}
 \newcommand{\obsm}   {\mymath{O}}
 
-\newcommand{\argmin}[1]{\underset{#1}{\operatorname{arg}\,\operatorname{min}}\;}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\newcommand{\argminvar}[1]{\ensuremath{\underset{#1}{{\argmin}}}}
 
 \begin{document}
 
@@ -92,96 +93,77 @@ The experiments that were performed applied stochastic optimization and a percep
 \section{Formalization}
 %policy
 
-\subsection{Policies}
+\subsection{Parameterized Policies and Policy Improvement}
+\label{sec:parameterized_policies}
 
-In reinforcement learning, a policy maps states to actions:
-
-\begin{align}
-\label{eq:policy}\pi(\act|\sta) & \mbox{~with~} \act \in \actsp, \sta \in \stasp\\
-\end{align}
-
-In continuous reinforcement learning, it is customary to use policies which are parameterized by a parameter vector \app.
+In reinforcement learning, a policy maps states to actions (\ref{eq:policy}). In continuous reinforcement learning, where the state space $\stasp \in \mathbb{R}^N$ and action space $\actsp \in \mathbb{R}^N$,  it is customary to use policies which are parameterized by a parameter vector \app in the space $\appsp  \in \mathbb{R}^N$.
 
 \begin{align}
-\label{eq:policy_par}\pi(\act|\sta,\app) & \equiv  \pi_{\app}(\act|\sta) & \mbox{~with~}  \act \in \actsp, \sta \in \stasp, \app \in \appsp \\
-& \actsp \in \mathbb{R}^N & \mbox{Action space}\\
-& \stasp \in \mathbb{R}^N & \mbox{State space}\\
-& \appsp  \in \mathbb{R}^N & \mbox{~Policy parameter space}
-\end{align}
-
-\paragraph{Parameterized Skills}
-
-There arise many situations where the  policy parameter vector $\app$ is dependent on the context. The context is the set of relevant task parameters $\taskp$ which have an influence on the values of the policy parameters. Task parameters, \emph{\taskpsp}, define a task. In the case of application to manipulation, these parameters could be the position and orientation of the object, the object's geometry, the object's color, and any number of other defining properties. These task parameters are constant in time and do not include any robot properties. 
-
-There are essentially two approaches to taking into account task parameters during the execution of the policy. The first is to pull the task parameters inside the parameterized policy:
-
-\begin{align}
-& \pol(\act|\sta,\app,\taskp) & \mbox{One-step parameterized skill}
-\end{align}
-
-Examples include~\cite{matsubara11learning,stulp13learning}. We will refer to these as `one-step' parameterized skills. The second approach is to intermediately compute the appropriate policy parameters for given task parameters with a \emph{policy parameter function}:
-
-\begin{align}
-&\polg(\app|\taskp)          & \mbox{Step 1. Policy parameter function}\label{eq:pol_par_fun}\\
-&\pol(\act|\sta,\app) & \mbox{Step 2. Execute policy with parameters}
-\end{align}
-
-Now there is a two-level system: input task parameters into the policy parameter function which outputs policy parameters for the action policy, input these policy parameters to the action policy to perform the action. Therefore, we call such approache `two-step parameterized skills'.
-
-One further distinction should be made with respect to the policy parameter function. In the first case, the policy parameter function maps to the continuous policy parameter space (\ref{eq:pol_par_fun_regr}). Example here zzz. For tasks of this nature, \polg is learned through regression~\cite{ude10taskspecific,matsubara11learning,silva12learning,stulp13learning}.
-However, when there are a discrete number of options for policy parameters(\ref{eq:pol_par_fun_class}), classification is used instead of regression for the gating policy. \citet{daniel12learning} call this type of policy parameter function a `option policy', because it is a policy for choosing from a set of options. A full list of the different terminologies for parameterized skills and the policy parameter function is provided in Section~\ref{sec:related_work}. 
-
-\begin{align}
-&\polg : \taskpsp \mapsto \appsp & \mbox{Regression} \label{eq:pol_par_fun_regr}\\
-&\polg : \taskpsp \mapsto \{\app_1,\app_2,\dots,\app_O\} \mbox{~with~} \app_i \in \appsp & \mbox{Classification} \label{eq:pol_par_fun_class}
-\end{align}
-
-\subsection{Policy Improvement as Black-Box Optimization}
-
-\extract{In general, \emph{optimization} aims at finding the best solution $x^*$ that optimizes an objective function $J$, i.e. $x^* = \operatorname{argmax}  J(x)$. In \emph{continuous} optimization, $X$ is a continuous solution space in $\mathbb{R}^d$. In \emph{black-box} optimization, $J$ is unknown -- a black-box -- and the optimum can thus not be determined analytically.}
-
-\paragraph{Policy improvement} Optimizing policy parameters with respect to a cost function is known as \emph{policy improvement}. One approach to policy improvement is to treat it as a black-box optimization problem, i.e. to make no assumpations about $J$. In this case, the cost function maps the policy parameters to a scalar cost value:
-
-\begin{align}
-\costf\mbox{: } & \appsp \mapsto \mathbb{R}&\mbox{Cost function for policy improvement}\label{eq:cost}
-\end{align}
-
-Optimal policy parameters $\app^*$ minimize this cost function:
-
-\begin{align}
-\app^* = \argmin{\app}\costf(\app)
-\end{align}
-
-Optimization relies on exploring the solution space, which in the case of policy improvement is the policy parameter space. To foster exploration, we define a stochastic policy as follows:
-
-\begin{align}
-& \pi(\act|\sta,\app_\mu,\covar) & \mbox{Stochastic policy} \label{eq:stoch}
-\end{align}
-
-where the mean $\app_\mu$ and covariance matrix \covar  define a normal distribution. When executing the policy, a specific policy parameter vector \app is sampled from a normal distribution with the mean $\app_\mu$ and the variance $\covar$ shown, and executed with \app. This is known as parameter space exploration. For deterministic environements, the optimal policy is deterministic, i.e. \covar=$\mathbf{0}$:
-
-\begin{align}
-& \pi(\act|\sta,\app^*,\mathbf{0}) & \mbox{Optimal policy} \label{eq:stoch_opt}
+\label{eq:policy}     \pi:& \stasp               \mapsto \actsp & \mbox{Policy~} \pi(\act|\sta)\\
+\label{eq:policy_par} \pi:& \stasp \times \appsp \mapsto \actsp & \mbox{Parameterized policy~} \pi(\act|\sta,\app)
 \end{align}
 
 
-\paragraph{Policy Improvement for Parameterized Skills} For parameterized skills, the cost of a policy execution depends not only on the policy, but also on the parameters of the task. For instance, lifting a milk carton depends not only on your skill, but also on whether the carton is full or empty. Therefore, the cost function for parameterized skills is:
+Optimizing policy parameters with respect to a cost function is known as \emph{policy improvement}. 
+One approach to policy improvement is to treat it as a black-box optimization problem. This means that no assumptions are made about the cost function $J$, and that $J$ returns only a scalar cost value. In this approach, the cost function maps the policy parameters to a scalar cost value~(\ref{eq:cost}). Policy parameters that minimize this cost function are known as optimal policy parameters $\app^*$~(\ref{eq:opt_pol_pars}).
+
+\begin{align}
+& \costf\mbox{: } \appsp \mapsto \mathbb{R}&\mbox{Cost function for policy improvement}\label{eq:cost}\\
+& \app^* = \argminvar{\app}\costf(\app) \mbox{,~with~} \app\in\appsp  & \mbox{Optimal policy parameters}\label{eq:opt_pol_pars}
+\end{align}
+
+\subsection{Task Parameters}
+
+Task parameters $\taskp\in\taskpsp$ define a task. In manipulation, these parameters could be the position and orientation of the object, the object's geometry, the object's color, and any number of other defining properties. These task parameters are constant in time and do not include any robot properties.
+Some task parameters have an effect on the outcome of the task, and some do not. For instance, if you reach for a certain position, you will only be able to grasp the object if it is at that position. On the other hand, the color of the object does not matter. 
+
+Since a task is defined by its cost function, we include task parameters in the cost function definition:
 
 \begin{align}
 \costf\mbox{: } &\label{eq:cost_task} \appsp \times \taskpsp \mapsto \mathbb{R}&\mbox{Cost function for parameterized skills}
 \end{align}
 
-If different task parameters lead to different costs, i.e.
+%There arise many situations where the policy parameter vector $\app$ is dependent on the context. The context is the set of relevant task parameters $\taskp$ which have an influence on the values of the policy parameters. 
+With this definition, we now are now able to specify when task parameters lead to different optimal policies:
 %
 \begin{align}
-\label{eq:relq1} \exists \taskp \exists \taskp' \argmin{\app}\costf(\app,\taskp) \neq \argmin{\app}\costf(\app,\taskp')
+\label{eq:relq1} \exists \taskp \exists \taskp' \argminvar{\app}\costf(\app,\taskp) \neq \argminvar{\app}\costf(\app,\taskp')
 \end{align}
 %
-then the optimal parameterized skill must also depend on the task parameters:
-%
+
+\subsection{Parameterizing Policies with Task Parameters}
+
+If (\ref{eq:relq1}) holds, then, to be optimal, different policy parameters are required for different task parameters. Therefore, the policy may not depend only on the policy parameters, but also on the task parameters. 
+There are essentially two approaches to taking into account task parameters during the execution of the policy. The first is to pull the task parameters inside the parameterized policy:
+
 \begin{align}
-\label{eq:pol_par_fun_par}\polg(\app_\mu,\covar|\taskp)
+& \pol: \stasp\times\appsp\times\taskpsp \mapsto \actsp & \mbox{One-step parameterized skill $\pol(\act|\sta,\app,\taskp)$}
 \end{align}
+
+Examples of this approach include~\cite{matsubara11learning,  stulp13learning}. We will refer to these as `one-step' parameterized skills. The second approach is to intermediately compute the appropriate policy parameters for given task parameters with a \emph{policy parameter function}:
+
+\begin{align}
+\mbox{Step 1.~~}&\polg:\taskpsp\mapsto\appsp & \mbox{Policy parameter function~} \polg(\app|\taskp)\label{eq:pol_par_fun}\\
+\mbox{Step 2.~~}&\pol:\stasp\times\appsp\mapsto\actsp & \mbox{Execute policy with parameters~}  \pol(\act|\sta,\app)
+\end{align}
+
+Now there is a two-level system: input task parameters into the policy parameter function which outputs policy parameters for the action policy, input these policy parameters to the action policy to perform the action. Therefore, we call such approaches `two-step parameterized skills'.
+
+\subsection{Policies with a Discrete set of Parameters (Options)}
+
+One further distinction should be made with respect to the policy parameter function. In the first case, the policy parameter function maps to the continuous policy parameter space (\ref{eq:pol_par_fun_regr}). Example here zzz. For tasks of this nature, \polg is learned through regression~\cite{ude10taskspecific,matsubara11learning,silva12learning,stulp13learning}.
+However, when there are a discrete number of options for policy parameters (\ref{eq:pol_par_fun_class}), classification is used instead of regression for the gating policy.
+
+\begin{align}
+&\polg : \taskpsp \mapsto \appsp & \mbox{Continuous} \label{eq:pol_par_fun_regr}\\
+&\polg : \taskpsp \mapsto \{\app_1,\app_2,\dots,\app_O\} \mbox{~with~} \app_i \in \appsp & \mbox{Discrete options} \label{eq:pol_par_fun_class}
+\end{align}
+% zzz 
+% Continuous case: different optima for each task parameter
+% Options case   : different optima at least one different task parameters, but not all.
+
+\citet{daniel12learning} call this type of policy parameter function a `option policy', because it is a policy for choosing from a set of options. A full list of the different terminologies for parameterized skills and the policy parameter function is provided in Section~\ref{sec:related_work}. 
+
 
 \subsection{Perceptual Aliasing}
 
@@ -192,10 +174,10 @@ then the optimal parameterized skill must also depend on the task parameters:
 We don't always have direct excess to the task parameters. Instead, we have access to the detectable features which may or may not be relevant in determining the action policy parameters.  The feature space contains the set of all possible feature vectors that can be seen. Each feature within this vector can be either a real number or one of a discrete set. In the robot example, the features might be the color of the object, in which case its value is one of a discrete set such as \{red, yellow, blue\}, or it could be the color intensity measured by a sensor, in which case it would be a continuous numeric value. The features which are observed are a function of the task parameters \eqref{eq:obs}. The color sensor value would be a function of the object's color, and the visual data would be a function of the object's geometry and orientation with respect to the camera, and so on.
 
 \begin{align}
-\obsm\mbox{: } &\label{eq:obs}\taskpsp \mapsto \featsp& \mbox{Observation model}\\
+\obsm\mbox{: } &\label{eq:obs}\taskpsp \mapsto \featsp& \mbox{Observation model~} \featv=\obsm(\taskp)\\
 \featsp &= \featsp_1 \times \featsp_2 \times ... \times \featsp_N & \mbox{Feature space}\\
-\featsp_i &\in \mathbb{R}, or \featsp_i \in \{C_1,C_2,...,C_N\}&\notag\\
-\featv &\in \featsp, with \featv = <\feat_1,\feat_2,...,\feat_n>&
+\mbox{with~} &\featsp_i \in \mathbb{R}\mbox{, or~} \featsp_i \in \{C_1,C_2,...,C_N\}&\notag%\\
+%\featv &\in \featsp\mbox{, with~} \featv = <\feat_1,\feat_2,...,\feat_n>&
 \end{align}
 
 \begin{align}
@@ -208,28 +190,42 @@ It is necessary to define the idea of relevance: what makes a feature or a task 
 \taskp_i =& <\taskpv_1,\taskpv_2,...,\taskpv_i,...\taskpv_N> \notag & 
 \\
 \taskp'_i =& <\taskpv_1,\taskpv_2,...,\taskpv'_i,...\taskpv_N> \notag & \taskpv_i \neq \taskpv'_i \\
-\label{eq:relq} \taskp_i \in \taskpsp_{REL} \iff&\argmin{\app}\costf(\app,\taskp_i) \neq \argmin{\app}\costf(\app,\taskp'_i)\\
+\label{eq:relq} \taskp_i \in \taskpsp_{REL} \iff&\argminvar{\app}\costf(\app,\taskp_i) \neq \argminvar{\app}\costf(\app,\taskp'_i)\\
 \taskpsp_{REL} \cup & \taskpsp_{IRR} = \taskpsp,   \taskpsp_{REL} \cap \taskpsp_{IRR} = \emptyset 
 \end{align}
 
-Multiple tasks are present when \eqref{eq:relq} is true since there are two ideal actions. Therefore there are multiple tasks present if and only if there is at least one relevant task parameter. If a difference in one or more of the features can be detected when the task parameter changes, then it will be possible to perceptually de-alias the two tasks. Since the goal is to de-alias in an online fashion, the ideal action, $\argmin{\app}\costf(\app,\taskp)$, will not be known at the moment of de-aliasing. Instead, the value of the cost function $\costf$ is used as an indicator by how different it is for different values of the task parameter in question \eqref{eq:relq} as to whether or not the ideal action will be different in the two cases. Sometimes this will lead to overzealous de-aliasing, but perceptual classes can easily be merged again if it is discovered the same actions are being performed.
+Multiple tasks are present when \eqref{eq:relq} is true since there are two ideal actions. Therefore there are multiple tasks present if and only if there is at least one relevant task parameter. If a difference in one or more of the features can be detected when the task parameter changes, then it will be possible to perceptually de-alias the two tasks. Since the goal is to de-alias in an online fashion, the ideal action, $\argminvar{\app}\costf(\app,\taskp)$, will not be known at the moment of de-aliasing. Instead, the value of the cost function $\costf$ is used as an indicator by how different it is for different values of the task parameter in question \eqref{eq:relq} as to whether or not the ideal action will be different in the two cases. Sometimes this will lead to overzealous de-aliasing, but perceptual classes can easily be merged again if it is discovered the same actions are being performed.
 
 \section{Methods}
 
 \subsection{Evolution Strategies for Policy Improvement}
+\label{sec:evolution_strategies}
 
-\extract{Evolution strategies (ES) are algorithms for solving continuous BBO problems. They belong to the class of evolutionary algorithms, which use mutation, recombination, and selection to iteratively acquire increasingly good (populations of) candidate solutions.}
+As defined in Section~\ref{sec:parameterized_policies}, the goal of policy improvement is to find the optimal policy parameters $\app^*$ which minimize the cost function $J:\appsp \mapsto \mathbb{R}$.
 
-\color{red}Explain stochastic optimization here \color{black}
+Stochastic optimization relies on exploring the input space of the cost function, which in the case of policy improvement is the policy parameter space. To foster exploration, we define a stochastic policy as follows:
 
+\begin{align}
+& \pi(\act|\sta,\app_\mu,\covar) & \mbox{Stochastic policy} \label{eq:stoch}
+\end{align}
 
-\begin{align*}
-\app_{k=1\dots K} & {\sim}\mathcal{N}({\app_\mu},{\covar})\\
-\forall k~J_k & = J(\app_k)\\
-\forall k~P_k & = \mbox{``lower cost} \Rightarrow \mbox{higher weight''}\\
-\app^{new} & = \sum_{k=1}^{K} P_k \app_k\\
-\covar^{new} & = \sum_{k=1}^{K}P_k(\app_k-\app)(\app_k-\app)^\intercal
-\end{align*}
+where the mean $\app_\mu$ and covariance matrix \covar  define a normal distribution. When executing the policy, a specific policy parameter vector \app is sampled from a normal distribution with the mean $\app_\mu$ and the variance $\covar$ shown, and executed with \app. This is known as parameter space exploration. 
+
+Stochastic optimization proceeds by taking $K$ policy parameter samples~(\ref{equ_so_sample}), and determining the cost for each of these samples by executing the policy~(\ref{equ_so_cost}). Then, costs are converted into weights $w_k$, where samples with lower costs have higher weights. In~(\ref{equ_so_wa_mean}) the new mean of the distribution is computed through a weighted averaging over the samples. Low-cost samples thus contribute more to the new mean then high-cost samples, and the the mean $\app_\mu$ thus (on average) moves closer to $\app^*$. The same is done for the covariance matrix.
+
+\begin{align}
+\app_{k=1\dots K} & {\sim}\mathcal{N}({\app_\mu},{\covar})\label{equ_so_sample}\\
+\forall k~J_k & = J(\app_k) \label{equ_so_cost}\\
+\forall k~w_k & = \mbox{``lower cost} \Rightarrow \mbox{higher weight''}\label{equ_so_cost_to_w}\\
+\app_\mu^{new} & = \sum_{k=1}^{K} w_k \app_k\label{equ_so_wa_mean}\\
+\covar^{new} & = \sum_{k=1}^{K}w_k(\app_k-\app_\mu)(\app_k-\app_\mu)^\intercal\label{equ_so_wa_covar}
+\end{align}
+
+This procedure iterates until a halting criteria. For deterministic environements, the resulting optimal policy is also deterministic, i.e. \covar=$\mathbf{0}$:
+
+\begin{align}
+& \pi(\act|\sta,\app^*,\mathbf{0}) & \mbox{Optimal (deterministic) policy} \label{eq:stoch_opt}
+\end{align}
 
 \subsection{Perceptual De-aliasing}
 The following description will be given in the context of the simulated robot which will be discussed further later in the paper, but this algorithm can be equally well applied to performing and action which is defined by a discrete number of parameters. 
