@@ -131,7 +131,7 @@ classdef Skill
             obj.learning_history(end+1) = summary;
           end
           
-          plot_me = 1; %turn plotting on for the distributions
+          plot_me = 0; %turn plotting on for the distributions
           %------------------------------------------------------------------
           % Plotting
           if (plot_me)
@@ -190,7 +190,7 @@ classdef Skill
            
              
            %[percepts'; costs(:,1)']
-           %split_decision = false;
+           split_decision = false;
 
            if (obj.previous_experience(end).i==80)
              fprintf('Manual splitting!\n')
