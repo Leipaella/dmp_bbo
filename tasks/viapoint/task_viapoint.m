@@ -8,6 +8,7 @@ task.viapoint = viapoint;
 task.viapoint_time_ratio = viapoint_time_ratio;
 
 task.cost_function= @cost_function_viapoint;
+task.observation_function= @observation_function_viapoint;
 
 
   function costs = cost_function_viapoint(task,cost_vars)
@@ -30,6 +31,37 @@ task.cost_function= @cost_function_viapoint;
       costs(k,1) = sum(costs(k,2:end));
     end
   end
+
+  function observation = observation_function_viapoint(task,N,min_values,max_values,plot_me)
+    n_dim = length(task.viapoint);
+    if (n_dim~=2)
+      error('Sorry. observation_function_viapoint only works for n_dim==2 (but it is %d)',n_dim)
+    end
+    if (nargin<2), N = 20; end
+    if (nargin<3), min_values = zeros(1,n_dim); end
+    if (nargin<4), max_values = ones(1,n_dim); end
+    if (nargin<5), plot_me = 0; end
+
+    % Scale viapoint in normalized space [0-1]
+    scaled_viapoint = (task.viapoint-min_values)./(max_values-min_values);
+    % Generate X/Y grid in normalized space
+    [X Y] = meshgrid(linspace(0,1,N),linspace(0,1,N));
+    % Get value in multi-variate normal distribution
+    Z = mvnpdf([ X(:) Y(:)],scaled_viapoint,0.001*eye(n_dim));
+    % Make an NxN image of this.
+    image = reshape(Z,N,N);
+    
+    if (plot_me)
+      mesh(image)
+      axis square
+      axis tight
+    end
+    
+    observation = image;
+    
+    
+  end
+
 
 end
 
