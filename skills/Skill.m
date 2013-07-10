@@ -185,12 +185,12 @@ classdef Skill
              percepts(ii,:) = obj.previous_experience(end - obj.K + ii).percept;
              costs(ii,:) = obj.previous_experience(end - obj.K + ii).cost;
            end
-           %[split_decision split_feature split_value] = feature_split_cluster_costs(percepts,costs,0.09);
+           [split_decision split_feature split_value] = feature_split_cluster_costs(percepts,costs,0.09);
            %[split_decision split_feature split_value] = feature_split_sliding(percepts,costs,0.09,fig);
            
              
            %[percepts'; costs(:,1)']
-           split_decision = false;
+           %split_decision = false;
 
            if (obj.previous_experience(end).i==80)
              fprintf('Manual splitting!\n')
