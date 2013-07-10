@@ -128,13 +128,29 @@ for i_feature = 1:n_features
     [idx, C, sumd] = kmeans(c,k,'emptyaction','singleton');
     idx = gaussians{gmdk}.cluster(c);
     color = ['r';'b';'k'];
-    tree = classregtree(f,idx,'method','classification','minparent',ceil(n_samples/10));
+    %tree = classregtree(f,idx,'method','classification','minparent',ceil(n_samples/10));
+    tree = classregtree(f,idx,'method','classification');
     %prune it so as not to overfit the data in a way that won't be visible
     %to us...
     n_levels = max(tree.prunelist);
     tree = prune(tree,max(n_levels - 1,0));
     
     fit = tree.eval(f);
+
+    
+    if (0)
+      % Own confusion matrix code
+      idx2 = str2num(cell2mat(fit)); %#ok<ST2NM>
+      cl = unique([idx(~isnan(idx)); idx2(~isnan(idx2))]);
+      cm_freek = zeros(length(cl));
+      for cc1=1:length(cl)
+        for cc2=1:length(cl)
+          cm_freek(cc1,cc2) = sum(idx==cl(cc1) & idx2==cl(cc2));
+        end
+      end
+      cm=cm_freek;
+    end
+    
     cm = confusionmat(idx,str2num(cell2mat(fit)));
     
     for kk = 1:max(size(cm))
