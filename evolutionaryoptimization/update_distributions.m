@@ -53,7 +53,7 @@ n_samples = size(samples,2);
 % First column contains total costs
 total_costs = costs(:,1);
 
-disp(update_parameters.weighting_method);
+%disp(update_parameters.weighting_method);
 %-------------------------------------------------------------------------------
 % First, map the costs to the weights
 if (strcmp(update_parameters.weighting_method,'PI-BB'))
@@ -72,7 +72,7 @@ elseif (strcmp(update_parameters.weighting_method,'CEM') || strcmp(update_parame
     for ii=1:mu
       weights(indices(ii)) = log(mu+1/2)-log(ii);
     end
-    disp(weights)
+    %disp(weights)
   end
 
 else
