@@ -65,6 +65,8 @@ classdef Skill
       K=obj.K;
       plot_me = 0;
       n_dofs = size(obj.distributions,2);
+      % Very difficult to see anything in the plots for many dofs
+      plot_n_dofs = min(n_dofs,3);
       mean = obj.distributions.mean;
       n_dims = size(mean,2);
 
@@ -97,6 +99,18 @@ classdef Skill
         rollout.cost = costs;
         rollout.task_instance = task_instance;
         obj.rollout_buffer{end+1} = rollout;
+
+        % Plot rollouts if the plot_rollouts function is available
+        if (isfield(task_solver,'plot_rollouts'))
+          subplot(plot_n_dofs,4,1:4:plot_n_dofs*4)
+          if (length(obj.rollout_buffer)==1)
+            cla % Clear axis on first plot
+          end
+          task_solver.plot_rollouts(gca,obj.rollout_buffer{end}.task_instance,obj.rollout_buffer{end}.cost_vars)
+          hold on
+          title('Visualization of roll-outs')
+          drawnow
+        end
         
         %if rollout buffer is full, update distributions and clear buffer
         if(length(obj.rollout_buffer)>K)
@@ -126,25 +140,24 @@ classdef Skill
           else
             obj.learning_history(end+1) = summary;
           end
+          
           plot_me = 1; %turn plotting on for the distributions
           %------------------------------------------------------------------
           % Plotting
           if (plot_me)
             figure(1)
 
-            % Very difficult to see anything in the plots for many dofs
-            plot_n_dofs = min(n_dofs,3);
-
             % Plot rollouts if the plot_rollouts function is available
-            if (isfield(task_solver,'plot_rollouts'))
-              subplot(plot_n_dofs,4,1:4:plot_n_dofs*4)
-              cla
-              for ii = 1:length(obj.rollout_buffer)
-                task_solver.plot_rollouts(gca,obj.rollout_buffer{ii}.task_instance,obj.rollout_buffer{ii}.cost_vars)
-                hold on
-              end
-              title('Visualization of roll-outs')
-            end
+            % (this is now already done above after each rollout)
+            %if (isfield(task_solver,'plot_rollouts'))
+            %  subplot(plot_n_dofs,4,1:4:plot_n_dofs*4)
+            %  cla
+            %  for ii = 1:length(obj.rollout_buffer)
+            %    task_solver.plot_rollouts(gca,obj.rollout_buffer{ii}.task_instance,obj.rollout_buffer{ii}.cost_vars)
+            %    hold on
+            %  end
+            %  title('Visualization of roll-outs')
+            %end
 
             % Plot learning histories
             plotlearninghistory(obj.learning_history);
