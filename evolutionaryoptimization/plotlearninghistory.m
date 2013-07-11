@@ -43,10 +43,13 @@ for i_dof=1:plot_n_dofs %#ok<FXUP>
   end
   
   % Plot only most recent 10 history entries
-  for hh=[ 1 max(1,length(learning_history)-10):length(learning_history) ]
+  for hh=1:length(learning_history)
+  %for hh=[ 1 max(1,length(learning_history)-10):length(learning_history) ]
 
     highlight = (hh==length(learning_history));
     plot_samples = (hh==length(learning_history));
+    highlight = 0;
+    plot_samples = 0;
     summary = learning_history(hh);
     update_distributions_visualize(summary,highlight,plot_samples,i_dof)
 
@@ -126,16 +129,18 @@ all_costs = [];
 n_rollouts_per_update = [];
 for hh=1:length(learning_history)
   all_costs = [all_costs; learning_history(hh).costs];
+  mean_costs(hh) = mean(learning_history(hh).costs(:,1));
   n_rollouts_per_update(hh) = size(learning_history(hh).costs,1);
   %std_costs_exploration(hh,:) = sqrt(var(learning_history(hh).costs));
 end
 evaluation_rollouts = cumsum([1 n_rollouts_per_update(1:end-1)]);
 
 subplot(plot_n_dofs,4,4:4:plot_n_dofs*4)
-plot(all_costs(:,1),'-','Color',0.8*ones(1,3))
+plot(all_costs(:,1),'.','Color',0.8*ones(1,3))
 hold on
-plot(evaluation_rollouts,all_costs(evaluation_rollouts,1),'-','LineWidth',3)
-plot(evaluation_rollouts,all_costs(evaluation_rollouts,:),'-','LineWidth',1)
+plot(evaluation_rollouts,mean_costs,'-','Color',[0 0 1],'LineWidth',2)
+%plot(evaluation_rollouts,all_costs(evaluation_rollouts,1),'-','LineWidth',3)
+%plot(evaluation_rollouts,all_costs(evaluation_rollouts,:),'-','LineWidth',1)
 
 hold off
 axis square

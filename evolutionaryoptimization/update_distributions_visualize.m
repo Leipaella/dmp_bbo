@@ -78,7 +78,7 @@ for i_dof=i_dofs
   else
     if (plot_n_dim<3)
       set([h_before_covar h_after_covar],'Color',0.8*ones(1,3),'LineWidth',1);
-      set(h_before_theta ,'MarkerFaceColor',0.8*ones(1,3),'MarkerEdgeColor','none');
+      %set(h_before_theta ,'MarkerFaceColor',0.8*ones(1,3),'MarkerEdgeColor','none');
     end
   end
 end
