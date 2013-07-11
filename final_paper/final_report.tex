@@ -97,7 +97,7 @@ The experiments that were performed applied stochastic optimization and a percep
 \subsection{Parameterized Policies and Policy Improvement}
 \label{sec:parameterized_policies}
 
-In reinforcement learning, a policy maps states to actions (\ref{eq:policy}). In continuous reinforcement learning, where the state space $\stasp \in \mathbb{R}^N$ and action space $\actsp \in \mathbb{R}^N$,  it is customary to use policies which are parameterized by a parameter vector \app in the space $\appsp  \in \mathbb{R}^N$.
+In reinforcement learning, a policy maps states to actions (\ref{eq:policy}). In continuous reinforcement learning, where the state space $\stasp \in \mathbb{R}^N$ and action space $\actsp \in \mathbb{R}^N$,  it is customary to use policies which are parameterized by a policy parameter vector \app in the space $\appsp  \in \mathbb{R}^N$.
 
 \begin{align}
 \label{eq:policy}     \pi:& \stasp               \mapsto \actsp & \mbox{Policy~} \pi(\act|\sta)\\
@@ -129,9 +129,7 @@ s_i \in \taskpsp &\iff\notag\\
 &\argminvar{\app}\costf(\app,\sta) \neq \argminvar{\app}\costf(\app,\sta')\label{eq:relq0} 
 \end{align}
 
-Thus, a state variable $s_i$ is a task parameter iff there are two state vectors where everything is equal \emph{except} $s_i$, and these two state vectors require different task parameters to minimize the cost function.
-%zzz These task parameters are constant in time and do not include any robot properties.
-If we exclude all irrelevant state variables from the state vector, we can thus rewrite our cost function as:
+Thus, a state variable $s_i$ is a task parameter iff there are two state vectors whose components are all equal \emph{except} the component $s_i$, and these two state vectors require different policy parameters to minimize the cost function. Task parameters describe the initial state of the world before the policy is executed, and therefore do not change in time and do not include the robot's properties. If we exclude all irrelevant state variables from the state vector, we can thus rewrite our cost function as:
 
 \begin{align}
 \costf\mbox{: } &\label{eq:cost_task} \appsp \times \taskpsp \mapsto \mathbb{R}&\mbox{Cost function with task parameters}
@@ -140,7 +138,7 @@ If we exclude all irrelevant state variables from the state vector, we can thus 
 \subsection{Including Task Parameters in Policies (Parameterized Skills)}
 
 If (\ref{eq:relq0}) holds, then, to be optimal, different policy parameters are required for different task parameters. Optimal policies \emph{must} thus take the task parameters into account. 
-Therefore, \emph{parameterized skills} determine the policy parameters from the task parameters in a seperate step:
+Therefore, \emph{parameterized skills} calculate the policy parameters based on the task parameters in a seperate step:
 %There are essentially two approaches to taking into account task parameters during the execution of the policy. The first is to pull the task parameters inside the parameterized policy:
 %
 %\begin{align}
@@ -151,18 +149,18 @@ Therefore, \emph{parameterized skills} determine the policy parameters from the 
 
 \begin{align}
 \mbox{Step 1.~~}&\polg:\hat{\taskpsp}\mapsto\appsp & \mbox{Policy parameter function~} \polg(\app|\taskp)\label{eq:pol_par_fun}\\
-\mbox{Step 2.~~}&\pol:\stasp\times\appsp\mapsto\actsp & \mbox{Execute policy with parameters~}  \pol(\act|\sta,\app)
+\mbox{Step 2.~~}&\pol:\stasp\times\appsp\mapsto\actsp & \mbox{Action policy with parameters~}  \pol(\act|\sta,\app)
 \end{align}
 
 Now there is a two-level system: input task parameters into the policy parameter function which outputs policy parameters for the action policy, input these policy parameters to the action policy to perform the action. 
 
-An important distinction is that Step 1. is performed off-line before the execution of the movement. It thus takes only the values of the task parameter at the first time step $t=0$ into account, and $\taskp \subset \sta_0$
+An important distinction is that Step 1. is performed off-line before the execution of the movement. It thus needs only take into account the values of the task parameter at the first time step $t=0$, and $\taskp \subset \sta_0$
 
 
 \subsection{Policies with a Discrete set of Parameters (Options)}
 
 One further distinction should be made with respect to the policy parameter function. In the first case, the policy parameter function maps to the continuous policy parameter space (\ref{eq:pol_par_fun_regr}). Example here zzz. For tasks of this nature, \polg is learned through regression~\cite{ude10taskspecific,matsubara11learning,silva12learning,stulp13learning}.
-However, when there are a discrete number of options for policy parameters (\ref{eq:pol_par_fun_class}), classification is used instead of regression for the gating policy.
+In the second case, when there are a discrete number of options for policy parameters (\ref{eq:pol_par_fun_class}), classification is used instead of regression for the policy parameter function.
 
 \begin{align}
 &\polg : \hat{\taskpsp} \mapsto \appsp & \mbox{Continuous} \label{eq:pol_par_fun_regr}\\
@@ -172,7 +170,7 @@ However, when there are a discrete number of options for policy parameters (\ref
 % Continuous case: different optima for each task parameter
 % Options case   : different optima at least one different task parameters, but not all.
 
-\citet{daniel12learning} call this type of policy parameter function a `option policy', because it is a policy for choosing from a set of options. A full list of the different terminologies for parameterized skills and the policy parameter function is provided in Section~\ref{sec:related_work}. 
+\citet{daniel12learning} call this second type of policy parameter function an `option policy', because it is a policy for choosing from a set of options. A full list of the different terminologies for parameterized skills and the policy parameter function is provided in Section~\ref{sec:related_work}. 
 
 
 \subsection{Perceptual Aliasing}
