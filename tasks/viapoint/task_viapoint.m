@@ -26,7 +26,7 @@ task.observation_function= @observation_function_viapoint;
       % Cost due to acceleration
       sum_ydd = sum((sum(ydds.^2,2)));
       costs(k,3) = sum_ydd/10000;
-      costs(k,3) = costs(k,3)/10; %added to make acceleration less important
+      costs(k,3) = costs(k,3)/50; %added to make acceleration less important
 
       % Total cost is the sum of all the subcomponent costs
       costs(k,1) = sum(costs(k,2:end));

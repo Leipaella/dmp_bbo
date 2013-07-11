@@ -1,5 +1,7 @@
 function [skill] = dmp_skill_example
 
+if (1)
+
 addpath dynamicmovementprimitive
 addpath(genpath('evolutionaryoptimization/'))
 addpath(genpath('tasks/'))
@@ -20,37 +22,57 @@ for dd=1:n_dofs
   distributions_init(dd).covar = 5*eye(n_basis_functions);
 end
 
-n_rollouts_per_update = 16;
+n_rollouts_per_update = 20;
 skill = Skill('two_viapoint_solver',distributions_init,n_rollouts_per_update);
 skill.n_figs = 2;
 
 % Number of updates
-n_updates =  250;
+n_updates =  2500;
 goal_learning = 0;
 for i_update=1:n_updates
   task = get_new_task(g, y0);
   %             solve_task_instance(obj,task_instance, task_solver, percept,         goal_learning)
   skill = skill.solve_task_instance(    task,          task_solver, task.viapoint(1),goal_learning);
+
+  plot_n_dofs=2;
+  i_dof=1;
+  subplot(plot_n_dofs,4,(i_dof-1)*4 + 2)
+  axis([-10 20 -5 15]);
+  axis square
+  i_dof=2;
+  subplot(plot_n_dofs,4,(i_dof-1)*4 + 2)
+  axis([-5 20 -3 4]);
+  axis square
+  
+  subplot(plot_n_dofs,4,4:4:plot_n_dofs*4)
+  axis([0 700 0.015 0.6])
+  %set(gca,'YScale','log')
+
+  drawnow
 end
+return
 
 disp('Done with learning. Plotting learning curves for all (sub)skills.');
-% Plot learning curves for all skills
-skill_stack{1} = skill;
-while (~isempty(skill_stack))
-  
-  % Pop first skill
-  cur_skill = skill_stack{1};
-  skill_stack(1) = [];
+skillplotlearningcurves(skill)
 
-  % Plot its learning history
-  figure(cur_skill.idx)
-  clf
-  plotlearninghistory(cur_skill.learning_history);
+end
+
+plot_n_dofs = 2;
+for ff=[1 11 12 121 122]
+  ff
+  figure(ff)
+  i_dof=1
+  subplot(plot_n_dofs,4,(i_dof-1)*4 + 2)
+  axis([-10 20 -5 15]);
+  axis square
+  i_dof=2
+  subplot(plot_n_dofs,4,(i_dof-1)*4 + 2)
+  axis([-5 20 -3 4]);
+  axis square
   
-  % Push any children on the stack
-  for ss=1:length(cur_skill.subskills)
-    skill_stack{end+1} = cur_skill.subskills(ss);
-  end
+  subplot(plot_n_dofs,4,4:4:plot_n_dofs*4)
+  axis([0 700 0.015 0.6])
+  set(gca,'YScale','log')
 end
 
 end
@@ -60,15 +82,13 @@ function task = get_new_task(g, y0)
 
 which = rand(1);
 
-if which<0.3
+viapoint_time_ratio =       0.25;
+if which<0.25
   viapoint            = [0.45 0.7];
-  viapoint_time_ratio =       0.3;  
-elseif which>0.7
+elseif which>0.75
   viapoint            = [0.4 0.7];
-  viapoint_time_ratio =       0.3;  
 else
   viapoint            = [0.7 0.4];
-  viapoint_time_ratio =       0.3; 
 end
 
 task = task_viapoint(viapoint,viapoint_time_ratio);
