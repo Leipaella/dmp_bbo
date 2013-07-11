@@ -5,7 +5,7 @@ trial_name = '2_viapoint_tasks';
 fh = figure(10);
 n_skills_disp = 4;
 goal_learning = 0;
-n_samples_per_update = 100;
+n_samples_per_update = 25;
 n_updates = 100;
 disp_n_skills = 4;
 n_dims = 1;
@@ -46,7 +46,7 @@ skill_list(1).history = [];
 
 [tasks percepts n_tasks] = get_new_task(g,y0);
 
-wh = waitbar(0,'Running Simulations');
+%wh = waitbar(0,'Running Simulations');
 t1 = clock;
 while i_update < n_updates
 
@@ -70,7 +70,7 @@ while i_update < n_updates
       secs_remaining = secs_remaining - 60*mins;
       secs = round(secs_remaining);
       new_title = sprintf('%2dh %2dm %2ds remaining...',hours,mins,secs);
-      waitbar(fraction,wh,new_title);
+      %waitbar(fraction,wh,new_title);
       
       task = tasks(r(i_instance));
       percept = percepts(r(i_instance),:);
@@ -168,12 +168,15 @@ while i_update < n_updates
             i_row = ii;
             i_col = cols/2 + i_f;
             t = (i_row-1)*cols + i_col;
+            fig=0;
+            test=0;
             if t < rows*cols
               subplot(rows,cols,t,'replace');
-              [sd sf sv] = feature_split_cluster_costs(ps(:,i_f),cs,p_thresh,1,1);
-            else
-              [sd sf sv] = feature_split_cluster_costs(ps(:,i_f),cs,p_thresh);
+              fig=1;
+              test=1;
             end
+            %[sd sf sv] = feature_split_cluster_costs(ps(:,i_f),cs,p_thresh,fig,test);
+            [sd sf sv] = feature_split_dbscan(ps(:,i_f),cs,p_thresh,fig,test);
             split_decision(i_f) = sd;
             split_feature(i_f) = sf;
             split_values{i_f} = sv;

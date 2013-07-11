@@ -178,6 +178,7 @@ classdef Skill
           obj.previous_experience(end+1) = previous;
         end
     
+        if (0)
         if mod(length(obj.previous_experience),obj.K) == 0
            fig = obj.idx*obj.n_figs + 2;
            %reformat most recent K samples (i.e. all from the same dist)
@@ -185,7 +186,8 @@ classdef Skill
              percepts(ii,:) = obj.previous_experience(end - obj.K + ii).percept;
              costs(ii,:) = obj.previous_experience(end - obj.K + ii).cost;
            end
-           [split_decision split_feature split_value] = feature_split_cluster_costs(percepts,costs,0.09);
+           [split_decision split_feature split_value] = feature_split_dbscan(percepts,costs,0.09);
+           %[split_decision split_feature split_value] = feature_split_cluster_costs(percepts,costs,0.09);
            %[split_decision split_feature split_value] = feature_split_sliding(percepts,costs,0.09,fig);
            
              
@@ -220,6 +222,7 @@ classdef Skill
              
            end
           
+        end
         end
 
         %after a certain number of samples are taken, it's time to examine 
