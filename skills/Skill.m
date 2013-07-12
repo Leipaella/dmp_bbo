@@ -1,17 +1,20 @@
 classdef Skill
   properties
     name;
-    K;
     idx;
     distributions;
-    rollout_buffer; 
-    i_update=0;
-    previous_experience; %contains precept, sample, cost, and i_update
+    n_rollouts;
+    n_updates;
+
+    rollout_buffer_for_update;
+    n_rollouts_per_update;
+    rollout_buffer_for_split;
+    n_rollouts_per_split;
+
     condition;
     learning_history; %same structure as used in other locations
     update_parameters;
     
-    % later previous_experience; %update number, rollout, current distribution
     subskills;
   end
 
@@ -31,7 +34,7 @@ classdef Skill
         update_parameters.covar_update        = 'PI-BB';
         update_parameters.covar_full          =       0;
         update_parameters.covar_learning_rate =       1;
-        update_parameters.covar_bounds        =      [0.2 0.1];
+        update_parameters.covar_bounds        =      [0.2 0.01];
         update_parameters.covar_scales        =       1;
       end
 
@@ -39,8 +42,10 @@ classdef Skill
       obj.name = name;
       obj.distributions = distributions;
       obj.update_parameters = update_parameters;
-      obj.i_update = 0;
-      obj.K = n_rollouts_per_update;
+      obj.n_rollouts = 0;
+      obj.n_updates = 0;
+      obj.n_rollouts_per_update = n_rollouts_per_update;
+      obj.n_rollouts_per_split = n_rollouts_per_update; % zzz
       obj.subskills = [];
       obj.condition = [];
     end
@@ -69,12 +74,11 @@ classdef Skill
       %     - record sensation
       %     - Execute skill with parameters above, record all relevant vars
       %     - Determine cost, using task, given relevant variables recorded
-      %     - put results in rollout_buffer
+      %     - put results in rollout_buffer_for_update
       %     - put results in previous experience
 
       if nargin < 5, goal_learning = 0; end
 
-      K=obj.K;
       plot_me = 0;
       n_dofs = size(obj.distributions,2);
       % Very difficult to see anything in the plots for many dofs
@@ -97,8 +101,7 @@ classdef Skill
       
       % None of the subskill's preconditions held (or there were no subskills)
       % Therefore, do rollout within the current skill.
-      
-      obj.i_update = obj.i_update + 1;
+      obj.n_rollouts = obj.n_rollouts+ 1;
 
       %sample dmp parameters from distribution (1 at a time)
       if n_dims >1
@@ -114,21 +117,23 @@ classdef Skill
       costs = task_instance.cost_function(task_instance,cost_vars);
 
       %put results in rollout buffer
-      rollout = Rollout(obj.distributions,samples,cost_vars,costs,task_instance);
-      obj.rollout_buffer{end+1} = rollout;
+      rollout = Rollout(obj.distributions,samples,cost_vars,costs,task_instance,percept);
+      obj.rollout_buffer_for_update{end+1} = rollout;
+      obj.rollout_buffer_for_split{end+1}  = rollout;
 
       %if rollout buffer is full, update distributions and clear buffer
-      if (length(obj.rollout_buffer)>K)
-        fprintf('Buffer is full (%d rollouts). Performing update for "%s".\n',K,obj.name);
+      if (length(obj.rollout_buffer_for_update)>obj.n_rollouts_per_update)
+        fprintf('Buffer is full (%d rollouts). Performing update for "%s".\n',obj.n_rollouts_per_update,obj.name);
         %reshape the rollouts to work nicely with the
         %update_distributions function
-        for ii = 1:length(obj.rollout_buffer)
-          s(:,ii,:) = squeeze(obj.rollout_buffer{ii}.sample);
-          c(ii,:) = obj.rollout_buffer{ii}.cost;
+        for ii = 1:length(obj.rollout_buffer_for_update)
+          s(:,ii,:) = squeeze(obj.rollout_buffer_for_update{ii}.sample);
+          c(ii,:) = obj.rollout_buffer_for_update{ii}.cost;
         end
 
         %update the distributions
         [obj.distributions summary] = update_distributions(obj.distributions,s,c,obj.update_parameters);
+        obj.n_updates = obj.n_updates+ 1;
 
         %add to learning history to make a nice plot
         if isempty(obj.learning_history)
@@ -147,8 +152,8 @@ classdef Skill
           if (isfield(task_solver,'plot_rollouts'))
             subplot(plot_n_dofs,4,1:4:plot_n_dofs*4)
             cla
-            for ii = 1:length(obj.rollout_buffer)
-              task_solver.plot_rollouts(gca,obj.rollout_buffer{ii}.task_instance,obj.rollout_buffer{ii}.cost_vars)
+            for ii = 1:length(obj.rollout_buffer_for_update)
+              task_solver.plot_rollouts(gca,obj.rollout_buffer_for_update{ii}.task_instance,obj.rollout_buffer_for_update{ii}.cost_vars)
               hold on
             end
             title('Visualization of roll-outs')
@@ -163,38 +168,24 @@ classdef Skill
 
         end
 
-
         %empty the rollout buffer
-        obj.rollout_buffer = [];
-
+        obj.rollout_buffer_for_update = [];
 
       end
 
-
-
-
-      %add to previous history!
-      previous.percept = percept;
-      previous.sample = samples;
-      previous.cost = costs;
-      previous.i = obj.i_update;
-      %need to do this to initiallize as a struct array
-      if isempty(obj.previous_experience)
-        obj.previous_experience = previous;
-      else
-        obj.previous_experience(end+1) = previous;
-      end
-
-      if mod(length(obj.previous_experience),obj.K) == 0
+      if (length(obj.rollout_buffer_for_split)>obj.n_rollouts_per_split)
         %reformat most recent K samples (i.e. all from the same dist)
-        for ii = 1 : obj.K;
-          percepts(ii,:) = obj.previous_experience(end - obj.K + ii).percept;
-          costs(ii,:) = obj.previous_experience(end - obj.K + ii).cost;
+        for ii = 1:obj.n_rollouts_per_split;
+          percepts(ii,:) = obj.rollout_buffer_for_split{end-obj.n_rollouts_per_split + ii}.percept;
+          costs(ii,:) = obj.rollout_buffer_for_split{end-obj.n_rollouts_per_split + ii}.cost;
         end
         [split_decision split_feature split_feature_ranges] = feature_split_dbscan(percepts,costs,0.09);
+        % remove first element in the rollout buffer
+        obj.rollout_buffer_for_split(1) = [];
 
-        if (split_decision)
+        if (split_decision )
           disp('Making subskills')
+          % Problem with tree: may lead to same skills
           subs1 = clone(obj);
           subs2 = clone(obj);
           obj.subskills          = subs1;
@@ -205,15 +196,13 @@ classdef Skill
             obj.subskills(ss).name     = sprintf('%s_subskill%d',obj.name,obj.subskills(ss).idx);
             obj.subskills(ss).condition.split_feature = split_feature;
             obj.subskills(ss).condition.split_feature_range = split_feature_ranges(ss,:);
-            obj.subskills(ss).rollout_buffer = [];
+            obj.subskills(ss).rollout_buffer_for_update = [];
+            obj.subskills(ss).rollout_buffer_for_split  = [];
           end
-          obj
-          obj.subskills(1)
-          obj.subskills(2)
         end
-
       end
 
+      
     end %end solve_task_instance
 
     function print(obj)
@@ -266,7 +255,7 @@ end
 g = [1.0 1.0];
 y0 = [0.0 0.0];
 obj = Skill('Test skill',distributions);
-obj.rollout_buffer = [];
+obj.rollout_buffer_for_update = [];
 obj.i_update = 0;
 obj.n_figs = 2;
 obj.idx = 0;
