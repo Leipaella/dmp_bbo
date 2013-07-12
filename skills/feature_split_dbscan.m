@@ -1,4 +1,4 @@
-function [split_decision split_feature split_feature_ranges] = feature_split_dbscan(percepts, costs, p_thresh, fig,test)
+function [split_decision split_feature split_feature_ranges] = feature_split_dbscan(percepts, costs, N, figure_handle)
 %
 % For each feature: cluster the costs. See if you can predict which cluster
 % a sample will be in based only on its feature. (an extention could be to
@@ -26,8 +26,8 @@ function [split_decision split_feature split_feature_ranges] = feature_split_dbs
 %------------------------------------------------------------------------------
 % Initialization of variables
 
-plot_en = 1;
-test = 1;
+if (nargin<4), figure_handle = 0; end
+
 if nargin == 0
   [split_decision split_feature split_value] = test_split_cluster_costs;
   return;
@@ -36,24 +36,18 @@ if nargin < 3, p_thresh = 0.1; end
 if nargin < 4, plot_en = 0; end
 if nargin < 5, test = 0; end
 
-
-if plot_en && ~test
-  figure(fig)
-  clf
-end
-
 c = costs(:,1);
 
 
 colors = ['r';'b';'k';'y';'m';'c'];
 
-[class,type]=dbscan(c,8,[]);
+[class,type]=dbscan(c,N,[]);
 if (max(class)>2)
   error('Bummer. Can only deal with 2 classes for now.')
 end
-plot_me = 0;
-if (plot_me)
-  figure(12)
+
+if (figure_handle)
+  figure(figure_handle)
   clf
   plot(0*c(class==-1),c(class==-1),'x','Color',0.8*[1 1 1]);
   for ii = 1:max(class)
@@ -69,12 +63,12 @@ split_feature_ranges = [];
 
 if (max(class)<2)
   % Only one class: we cannot split...
-  disp('Cannot cluster on cost. No point in splitting on feature.')
-  if (~plot_me)
+  %disp('Cannot cluster on cost. No point in splitting on feature.')
+  if (~figure_handle)
     return;
   end
 else
-  disp('Can cluster on cost! Trying to split clusters based on features.')
+  %disp('Can cluster on cost! Trying to split clusters based on features.')
 end
 
 n_samples = size(percepts,1);
@@ -82,9 +76,6 @@ percepts(:,end+1) = randn(n_samples,1);
 percepts(:,end+1) = randn(n_samples,1);
 n_features = size(percepts,2);
 for i_feature = 1:n_features
-  if (plot_me)
-    subplot(1,n_features,i_feature)
-  end
   f = percepts(:,i_feature);
 
   if (max(class)>1)
@@ -93,13 +84,13 @@ for i_feature = 1:n_features
     min_f2 =  min(f(class==2));
     max_f2 =  max(f(class==2));
     if (min_f1>max_f2)
-      disp('Found a split!')
+      %disp('Found a split!')
       split_value    = mean([min_f1 max_f2]);
       split_decision = true;
       split_feature  = i_feature;
       split_feature_ranges = [split_value Inf; -Inf split_value];
     elseif (min_f2>max_f1)
-      disp('Found a split!')
+      %disp('Found a split!')
       split_value    = mean([min_f2 max_f1]);
       split_decision = true;
       split_feature  = i_feature;
@@ -107,7 +98,8 @@ for i_feature = 1:n_features
     end
   end
 
-  if (plot_me)
+  if (figure_handle)
+    subplot(1,n_features,i_feature)
     for ii = 1:max(class)
       plot(f(class==ii),c(class==ii),strcat(colors(ii),'x'));
       hold on;

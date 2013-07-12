@@ -64,8 +64,8 @@ classdef Skill
     end
 
 
-    function obj = solve_task_instance(obj,task_instance, task_solver, percept, goal_learning)
-      fprintf('Solve task instance for %s\n',obj.name)
+    function obj = solve_task_instance(obj,task_instance, task_solver, percept)
+      %fprintf('Solve task instance for %s\n',obj.name)
 
       % Adds task_instance to the task_instance_buffer (useful when
       % executing in batch mode)
@@ -92,12 +92,12 @@ classdef Skill
       for ss=1:length(obj.subskills)
         %fprintf('  => Checking for subskill %d %d "%s"\n',ss,obj.subskills(ss).idx,obj.subskills(ss).name)
         if (obj.subskills(ss).precondition_holds(sensation, percept))
-          fprintf('  => Going for subskill %s\n',obj.subskills(ss).name)
+          %fprintf('  => Going for subskill %s\n',obj.subskills(ss).name)
           obj.subskills(ss) = obj.subskills(ss).solve_task_instance(task_instance,task_solver,percept);
           return;
         end
       end
-      fprintf('  =>No subskill is valid\n')
+      %fprintf('  =>No subskill is valid\n')
       
       % None of the subskill's preconditions held (or there were no subskills)
       % Therefore, do rollout within the current skill.
@@ -123,7 +123,6 @@ classdef Skill
 
       %if rollout buffer is full, update distributions and clear buffer
       if (length(obj.rollout_buffer_for_update)>obj.n_rollouts_per_update)
-        fprintf('Buffer is full (%d rollouts). Performing update for "%s".\n',obj.n_rollouts_per_update,obj.name);
         %reshape the rollouts to work nicely with the
         %update_distributions function
         for ii = 1:length(obj.rollout_buffer_for_update)
@@ -134,6 +133,8 @@ classdef Skill
         %update the distributions
         [obj.distributions summary] = update_distributions(obj.distributions,s,c,obj.update_parameters);
         obj.n_updates = obj.n_updates+ 1;
+        
+        fprintf('Performed update %d for "%s" because buffer is full (%d rollouts).\n',obj.n_updates,obj.name,obj.n_rollouts_per_update);
 
         %add to learning history to make a nice plot
         if isempty(obj.learning_history)
@@ -179,56 +180,39 @@ classdef Skill
           percepts(ii,:) = obj.rollout_buffer_for_split{end-obj.n_rollouts_per_split + ii}.percept;
           costs(ii,:) = obj.rollout_buffer_for_split{end-obj.n_rollouts_per_split + ii}.cost;
         end
-        [split_decision split_feature split_feature_ranges] = feature_split_dbscan(percepts,costs,0.09);
+        figure_handle = 0;
+        N = ceil(0.4*obj.n_rollouts_per_split);
+        [split_decision split_feature split_feature_ranges] = feature_split_dbscan(percepts,costs,N,figure_handle);
         % remove first element in the rollout buffer
         obj.rollout_buffer_for_split(1) = [];
 
         if (split_decision )
-          disp('Making subskills')
+          %disp('Making subskills')
           % Problem with tree: may lead to same skills
-          subs1 = clone(obj);
-          subs2 = clone(obj);
-          obj.subskills          = subs1;
-          obj.subskills(2)       = subs2;
+          subs = clone(obj);
+          subs(2) = clone(obj);
           for ss=1:2
-            obj.subskills(ss).subskills = [];
-            obj.subskills(ss).idx  = 10*obj.idx + ss;
-            obj.subskills(ss).name     = sprintf('%s_subskill%d',obj.name,obj.subskills(ss).idx);
-            obj.subskills(ss).condition.split_feature = split_feature;
-            obj.subskills(ss).condition.split_feature_range = split_feature_ranges(ss,:);
-            obj.subskills(ss).rollout_buffer_for_update = [];
-            obj.subskills(ss).rollout_buffer_for_split  = [];
+            subs(ss).subskills = [];
+            subs(ss).idx  = 10*obj.idx + ss;
+            subs(ss).name     = sprintf('%s_subskill%d',obj.name,subs(ss).idx);
+            subs(ss).condition.split_feature = split_feature;
+            subs(ss).condition.split_feature_range = split_feature_ranges(ss,:);
+            subs(ss).rollout_buffer_for_update = [];
+            subs(ss).rollout_buffer_for_split  = [];
           end
+          split_tree = true;
+          if (split_tree)
+            obj.subskills          = subs(1);
+            obj.subskills(2)       = subs(2);
+          else
+            % For a list, you have to copy the conditions and extend them
+          end
+          fprintf('Split skill "%s" into subskills "%s" and "%s"\n',obj.name,subs(1).name,subs(2).name)
         end
       end
 
       
     end %end solve_task_instance
-
-    function print(obj)
-      %Prints out a list of current subskills
-      disp(obj.name);
-      for skill = obj.subskills
-        disp(['  ' skill.name]);
-      end
-    end
-
-
-    function visualize_previous_experience(obj, fig)
-      figure(fig)
-      clf;
-      hold on;
-      for ii = 1:length(obj.previous_experience)
-        if(obj.previous_experience(ii).percept(1))
-          plot(obj.previous_experience(ii).cost(1),obj.previous_experience(ii).i,'rx');
-        else
-          plot(obj.previous_experience(ii).cost(1),obj.previous_experience(ii).i,'bx');
-        end
-      end
-      xlabel('cost');
-      ylabel('update number');
-    end
-
 
   end
 
@@ -243,7 +227,13 @@ function obj = Skill_test_function
 % For each task seen, calls the function solve_task_instance
 % Plots
 
-close all;
+
+task{1} = task_viapoint([0.4 0.7],0.25);
+task{2} = task_viapoint([0.7 0.4],0.25);
+
+g = [1.0 1.0];
+y0 = [0.0 0.0];
+task_solver = task_viapoint_solver_dmp(g,y0,0);
 
 n_dims = 2;
 n_dofs = 2;
@@ -251,25 +241,18 @@ for i_dof = 1:n_dofs
   distributions(i_dof).mean = ones(1,n_dims);
   distributions(i_dof).covar = 5*eye(2);
 end
+n_rollouts_per_update = 10;
+obj = Skill('Test skill',distributions,n_rollouts_per_update);
 
-g = [1.0 1.0];
-y0 = [0.0 0.0];
-obj = Skill('Test skill',distributions);
-obj.rollout_buffer_for_update = [];
-obj.i_update = 0;
-obj.n_figs = 2;
-obj.idx = 0;
-count = 0;
-while count < 800
+n_rollouts = 200;
+for i_rollout=1:n_rollouts
   percept = rand([1 5]);
   if(percept(1)>0.5)
-    task = task_viapoint([0.4 0.7],0.3);
+    cur_task = task{1}
   else
-    task = task_viapoint([0.7 0.4],0.3);
+    cur_task = task{2}
   end
-  task_solver = task_viapoint_solver_dmp(g,y0,0);
-  obj = obj.solve_task_instance(task,task_solver,percept);
-  count = count+1;
+  obj = obj.solve_task_instance(cur_task,task_solver,percept);
 end
 
 end
