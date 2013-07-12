@@ -4,20 +4,20 @@ classdef Skill
     K;
     idx;
     distributions;
-    rollout_buffer; %rollout.dmp_parameters_sample, rollout.sensation, rollout.cost
+    rollout_buffer; 
     i_update=0;
     previous_experience; %contains precept, sample, cost, and i_update
     condition;
     learning_history; %same structure as used in other locations
-    n_figs; %for 1, just does learning history, for 2 it does cost distributions too
-
+    update_parameters;
+    
     % later previous_experience; %update number, rollout, current distribution
     subskills;
   end
 
   methods
 
-    function obj = Skill(name, distributions, n_rollouts_per_update)
+    function obj = Skill(name, distributions, n_rollouts_per_update,update_parameters)
       if(nargin == 0)
         obj = Skill_test_function();
         return;
@@ -25,12 +25,22 @@ classdef Skill
       if(nargin<3)
         n_rollouts_per_update = 25;
       end
+      if (nargin<4)
+        update_parameters.weighting_method    = 'CMA-ES';
+        update_parameters.eliteness           = floor(n_rollouts_per_update/2);
+        update_parameters.covar_update        = 'PI-BB';
+        update_parameters.covar_full          =       0;
+        update_parameters.covar_learning_rate =       1;
+        update_parameters.covar_bounds        =      [0.2 0.1];
+        update_parameters.covar_scales        =       1;
+      end
+
       obj.idx = 1;
       obj.name = name;
       obj.distributions = distributions;
+      obj.update_parameters = update_parameters;
       obj.i_update = 0;
       obj.K = n_rollouts_per_update;
-      obj.n_figs = 0;
       obj.subskills = [];
       obj.condition = [];
     end
@@ -104,11 +114,7 @@ classdef Skill
       costs = task_instance.cost_function(task_instance,cost_vars);
 
       %put results in rollout buffer
-      rollout.dmp_parameters_distributions = obj.distributions;
-      rollout.dmp_parameters_sample = samples;
-      rollout.cost_vars = cost_vars;
-      rollout.cost = costs;
-      rollout.task_instance = task_instance;
+      rollout = Rollout(obj.distributions,samples,cost_vars,costs,task_instance);
       obj.rollout_buffer{end+1} = rollout;
 
       %if rollout buffer is full, update distributions and clear buffer
@@ -117,21 +123,12 @@ classdef Skill
         %reshape the rollouts to work nicely with the
         %update_distributions function
         for ii = 1:length(obj.rollout_buffer)
-          s(:,ii,:) = squeeze(obj.rollout_buffer{ii}.dmp_parameters_sample);
+          s(:,ii,:) = squeeze(obj.rollout_buffer{ii}.sample);
           c(ii,:) = obj.rollout_buffer{ii}.cost;
         end
 
-        %update parameters
-        update_parameters.weighting_method    = 'CMA-ES';
-        update_parameters.eliteness           = floor(K/2);
-        update_parameters.covar_update        = 'PI-BB';
-        update_parameters.covar_full          =       0;
-        update_parameters.covar_learning_rate =       1;
-        update_parameters.covar_bounds        =      [0.2 0.1];
-        update_parameters.covar_scales        =       1;
-
         %update the distributions
-        [obj.distributions summary] = update_distributions(obj.distributions,s,c,update_parameters);
+        [obj.distributions summary] = update_distributions(obj.distributions,s,c,obj.update_parameters);
 
         %add to learning history to make a nice plot
         if isempty(obj.learning_history)
@@ -189,7 +186,6 @@ classdef Skill
       end
 
       if mod(length(obj.previous_experience),obj.K) == 0
-        fig = obj.idx*obj.n_figs + 2;
         %reformat most recent K samples (i.e. all from the same dist)
         for ii = 1 : obj.K;
           percepts(ii,:) = obj.previous_experience(end - obj.K + ii).percept;

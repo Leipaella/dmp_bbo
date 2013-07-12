@@ -24,7 +24,6 @@ end
 
 n_rollouts_per_update = 20;
 skill = Skill('two_viapoint_solver',distributions_init,n_rollouts_per_update);
-skill.n_figs = 2;
 
 % Number of updates
 n_updates =  2500;
