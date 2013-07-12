@@ -40,6 +40,7 @@
 \newcommand{\costsp} {\mymath{R}}
 \newcommand{\costf}  {\mymath{J}}
 \newcommand{\covar}  {\mymath{\bm{\Sigma}}}
+\newcommand{\cost}	 {\mymath{R}}
 % Aliasing
 \newcommand{\feat}   {\mymath{f}}
 \newcommand{\featv}  {\mymath{\mathbf{f}}}
@@ -252,11 +253,20 @@ This procedure iterates until a halting criteria. For deterministic environement
 \end{align}
 
 \subsection{Perceptual De-aliasing}
-The following description will be given in the context of the simulated robot which will be discussed further later in the paper, but this algorithm can be equally well applied to performing any parameterized action policy. 
 
-The robot is given an initial starting motion through imitation learning. Then the robot will choose K sample actions, in which each action parameter is taken from a normal distribution centered around the imitation learning value and with a predefined initial covariance matrix. When the robot is next required to perform a task, it will record the features present, perform a sample action from the distribution, and record the cost that it incurs. Now after each performed task, the robot will accumulate a roll-out which contains the perception, action parameters, and cost. After K tasks have been seen, the sampling distribution and sampling covariance matrix are updated, biased towards the lower cost actions. Now future action will be drawn from this new sampling distribution. 
+Perceptual de-aliasing is the technique by which to find $\featsp_Q$, the relevant features, and how to define the policy parameter function \polg in terms of these relevant features. We are exploring perceptual de-aliasing in the context of a parameterized action policy that is an evolution strategy, described in \ref{sec:evolution_strategies}. This means that the available data is in the form $<\featv,\app,\cost>$ where $\cost = \costf(\app,\featv)$ and \app is taken from the changing distribution defined by $\app_\mu$ and \covar.
 
-If there is only one task, the algorithm will proceed in this manner, performing stochastic optimization until the local minimum of the cost is found, presumably towards perfecting the demonstrated action. If there are two tasks being shown, which have similar but different actions that need to be performed then this algorithm by itself will never find the context-specific best actions. Therefore, task splitting needs to be introduced in order to detect the difference between two different tasks. After this distinction is made, the two tasks can be treated separately, each with its own sampling distribution. To implement this idea, after K samples are taken, but before the new distribution is updated, a splitting test is run to determine if there are two different tasks that are falsely being treated as the same task.
+
+At first, $\hat{\featsp_Q}$ is empty, and \polg maps all \featv to a single policy parameter vector. As the stochastic optimization continues, one of the following methods are used to add relevant features to $\hat{\featsp_Q}$, and redefine the policy parameter function in terms of these relevant features.
+
+Taking advantage of the fact that the action policy parameters were sampled from a normal distribution, we can approximate that the action policy parameters are the same when the covariance of the sampling distribution is small. This assumption transforms \eqref{eq:cost_task} into \eqref{eq:cost_single_act},a cost which is solely dependent on the task parameters.
+
+
+\begin{align}
+	\label{eq:cost_single_act}\costf_{\app}: \taskpsp \to \costsp
+\end{align} 
+
+In the case where the features \emph{are} the task parameters, any difference in the cost $\costf_{\app}$ can be directly mapped to a difference in the feature. When the features are not the task parameters, but are a function of them \eqref{eq:obs_task}, any difference in the cost $\costf_{\app}$ can be directly mapped to a relevant feature $\feat \in \featsp_Q$.
 
 \begin{figure}[ht]
   \centering
@@ -265,22 +275,24 @@ If there is only one task, the algorithm will proceed in this manner, performing
   \label{fig:1vs2tasks}
 \end{figure} 
 
-In Figure \ref{fig:1vs2tasks}, the top two plots show the situation where there is only one task, i.e. $\taskpsp_1 = \taskpsp$. The bottom two plots shows the situation where there are two tasks. The blue line shows $\costf(\app,\taskp), \taskp \in \taskpsp_1$
+%In Figure \ref{fig:1vs2tasks}, the top two plots show the situation where there is only one task, i.e. $\taskpsp_1 = \taskpsp$. The bottom two plots shows the situation where there are two tasks. The blue line shows $\costf(\app,\taskp), \taskp \in \taskpsp_1$
 
-\color{red}Each task has its own cost function. When two tasks are being treated as the same task, some of the samples will be the cost function from one task, and some will be the cost function from the other task. \color{black} When the sampling distribution is at a location where the two cost functions vary, a histogram of the costs will reveal that there are two different clusters. By looking only at the cost distribution, regardless of the action taken, we are assuming that the action taken does not matter. In the case where the covariance matrix for the sampling distribution is small, this serves as a fairly accurate estimation, since all the actions taken in the K samples are very similar. Once the costs are clustered, any supervised learning algorithm can be used to determine which features indicate which cluster. For this work, a classification tree was used. If we had followed in a similar thread as~\citet{piater11learning}, the parallel would have been to determine visual classes by using the covariance matrix. If the covariance matrix remained large, or moved back and forth repeatedly, we could assume this was due to visual class aliasing, but it may also happen by chance, and is dependent on the reinforcement learning algorithm. Instead, by using approximately equivalent actions as if they were the same action, visual classes can be found completely independently of the reinforcement algorithm used. 
+%\color{red}Each task has its own cost function. When two tasks are being treated as the same task, some of the samples will be the cost function from one task, and some will be the cost function from the other task. \color{black} When the sampling distribution is at a location where the two cost functions vary, a histogram of the costs will reveal that there are two different clusters. By looking only at the cost distribution, regardless of the action taken, we are assuming that the action taken does not matter. In the case where the covariance matrix for the sampling distribution is small, this serves as a fairly accurate estimation, since all the actions taken in the K samples are very similar. Once the costs are clustered, any supervised learning algorithm can be used to determine which features indicate which cluster. For this work, a classification tree was used. If we had followed in a similar thread as~\citet{piater11learning}, the parallel would have been to determine visual classes by using the covariance matrix. If the covariance matrix remained large, or moved back and forth repeatedly, we could assume this was due to visual class aliasing, but it may also happen by chance, and is dependent on the reinforcement learning algorithm. Instead, by using approximately equivalent actions as if they were the same action, visual classes can be found completely independently of the reinforcement algorithm used. 
 
-Once a new visual class is identified by the supervised learning algorithm, the sampling distribution and covariance is initialized as the sampling distribution of both tasks before the split. If the cost function for both tasks is smooth and has a non-zero gradient at all points, the new optimizer should be able to find the minimum for the new task. 
+%Once a new visual class is identified by the supervised learning algorithm, the sampling distribution and covariance is initialized as the sampling distribution of both tasks before the split. If the cost function for both tasks is smooth and has a non-zero gradient at all points, the new optimizer should be able to find the minimum for the new task. 
 
 
 
 
 %\subsection{Task Splitting Techniques}
 
-Once a sufficient number of similar actions were taken, the percept-action-cost data was collected. Since the action was very similar, it could be taken as constant, reducing the complexity to percept-cost. Treating each perceived feature individually yielded a two dimensional work space of feature value vs. cost. 
+%Once a sufficient number of similar actions were taken, the percept-action-cost data was collected. Since the action was very similar, it could be taken as constant, reducing the complexity to percept-cost. Treating each perceived feature individually yielded a two dimensional work space of feature value vs. cost. 
 
 \subsubsection{Gaussian Mixture Models in Cost-Feature Space}
 
-The two dimensions of feature and cost were plotted against each other and then fitted with a Gaussian Mixture Model [4]. This was done in an attempt to see if there were two Gaussians, and whether they were very different in cost-space and percept-space. Upon further reflection, this only works with truly continuous features, and not with binary or classification features, since in this case, the `value' given in the feature space is meaningless as far as its spacial relation to its neighbors.
+
+
+The two dimensions of feature and cost were plotted against each other and then fitted with a Gaussian Mixture Model. This was done in an attempt to see if there were two Gaussians, and whether they were very different in cost-space and percept-space. Upon further reflection, this only works with truly continuous features, and not with binary or classification features, since in this case, the `value' given in the feature space is meaningless as far as its spacial relation to its neighbors.
 
 \begin{figure}[ht]
   \centerline{
